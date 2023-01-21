@@ -1,7 +1,6 @@
-import requests
 import datetime
-
 from flask_restx import Namespace, Resource, fields
+from common import FetchJson
 
 #TODO: separate games, from teams, from schedule and fetch data from local
 #database.  Done this way because the source data is fetched at each request
@@ -41,11 +40,6 @@ def FilterTeams( teams ):
 def FilterTeam( team ):
     teamKeys = [ "id", "name" ]
     return { key: team[ 'team' ][ key ] for key in teamKeys }
-
-# simplification of requests for the NHL api
-def FetchJson( url ):
-    response = requests.get( url )
-    return response.json()
 
 # fetch and filter raw NHL data
 def FetchSchedule():
