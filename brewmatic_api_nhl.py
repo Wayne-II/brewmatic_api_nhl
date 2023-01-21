@@ -1,3 +1,4 @@
+#TODO: error handling, design, tests, etc
 from flask import Flask
 from routes import api
 
