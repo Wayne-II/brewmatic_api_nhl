@@ -1,6 +1,17 @@
 import requests
-import json
 import datetime
+
+from flask_restx import Namespace, Resource, fields
+
+#TODO: separate games, from teams, from schedule and fetch data from local
+#database.  Done this way because the source data is fetched at each request
+#instead of regularly fetching the data and applying it to a local database
+#and then having the app API use the local database, implement models, etc.
+#This is not required for the initial version and would be a refactoring of the
+#existing code when these features are required.  The next iteration of this
+#API would only store the raw NHL results in a database and not make NHL API
+#requests on every request.  However the userbase is not large enough to
+#warrant this dev time.
 
 baseUrl = "https://statsapi.web.nhl.com/api/v1/schedule"
 
@@ -13,22 +24,30 @@ def FilterGames( games ):
         filteredGames.append( FilterGame( game ) )
     return filteredGames
 
+#TODO: take the filter pattern and genericize the function
+
 def FilterGame( game ):
     gameKeys = [ 'teams' ]
     return { key: FilterTeams( game[ key ] ) for key in gameKeys } 
 
+# filter a games teatms so only home and away are returned as the meta data is
+# not required
 def FilterTeams( teams ):
     teamsKeys = [ 'away', 'home' ]
     return { key: FilterTeam( teams[ key ] ) for key in teamsKeys }
 
+# filter a team so only the ID and name come back also flatten out object as
+# team is the only key that we keep
 def FilterTeam( team ):
     teamKeys = [ "id", "name" ]
     return { key: team[ 'team' ][ key ] for key in teamKeys }
 
+# simplification of requests for the NHL api
 def FetchJson( url ):
     response = requests.get( url )
     return response.json()
 
+# fetch and filter raw NHL data
 def FetchSchedule():
     today = GetDate()
     scheduleJson = FetchJson( baseUrl + "?date=" + today )
@@ -36,13 +55,18 @@ def FetchSchedule():
     for gameDate in scheduleJson['dates']:
         if gameDate['date'] == today:
             filteredGames = FilterGames( gameDate[ 'games' ] )
-    print( filteredGames )
-            
-                
+    return filteredGames
 
 # dev debug, usually FetchScheudle would be use by the route code which is the
 # publicly availabel API flask 
-FetchSchedule()
+# FetchSchedule()
+
+api = Namespace( "schedule" )
+
+@api.route("/")
+class Schedule( Resource ):
+    def get( self ):
+        return FetchSchedule()
 
 ##################################
 # NHL API INFO FOR THIS ENDPOINT #
@@ -52,16 +76,12 @@ FetchSchedule()
 #     "games" : [ {
 #       "teams" : {
 #         "away" : {
-#           "team" : {
 #             "id" : 5,
 #             "name" : "Pittsburgh Penguins"
-#           }
 #         },
 #         "home" : {
-#           "team" : {
 #             "id" : 9,
 #             "name" : "Ottawa Senators"
-#           }
 #         }
 #       }
 #     }, ... ]
