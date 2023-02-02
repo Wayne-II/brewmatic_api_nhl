@@ -80,7 +80,7 @@ class Schedule( Resource ):
 #       }
 #     }, ... ]
 # }
-
+#
 # https://statsapi.web.nhl.com/api/v1/schedule
 # ?date=YYYY-MM-DD
 # RAW RESPONSE EXAMPLE
