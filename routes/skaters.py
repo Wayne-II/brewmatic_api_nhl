@@ -24,18 +24,15 @@ def FetchSkaters( teamIds ):
     for skaterId in teamIds:
         requestUrl = baseUrl + '/' + str( skaterId )
         skaterJson =  FetchJson( requestUrl )
-        print('======================================')
-        print( skaterJson )
-        print( requestUrl )
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         filteredSkater = FilterSkater( skaterJson[ 'people' ][ 0 ] )
         requestUrl = baseUrl + '/' + str( skaterId ) + '/stats?stats=statsSingleSeason&season=' + seasonString
         statsJson = FetchJson( requestUrl )
-        filteredStats = FilterStats( statsJson[ 'stats' ][ 0 ][ 'splits' ][ 0 ][ 'stat' ] )
-        filteredSkater[ 'goals' ] = filteredStats[ 'goals' ]
-        print( '~-~-~-~')
-        print( filteredSkater )
-        print ('~*&^%$#@!~')
+        #TODO: it ppears some players do not have stats yet - seems to be a rookie thing, maybe goalies
+        try: 
+            filteredStats = FilterStats( statsJson[ 'stats' ][ 0 ][ 'splits' ][ 0 ][ 'stat' ] )
+            filteredSkater[ 'goals' ] = filteredStats[ 'goals' ]
+        except:
+            filteredSkater[ 'goals' ] = 0
         skaters.append( filteredSkater )
     return skaters
 
