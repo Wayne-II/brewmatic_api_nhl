@@ -51,6 +51,7 @@ id_parser = api.parser()
 id_parser.add_argument('id', type=int, action='split')
 
 @api.route("/")
+@api.doc( params={ 'id':'Team IDs' } )
 class Teams( Resource ):
     def get( self ):
         args = id_parser.parse_args()
