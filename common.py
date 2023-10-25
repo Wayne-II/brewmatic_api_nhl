@@ -27,14 +27,41 @@ def DetermineRoute( url ):
             return 'teams'
         case '/stats/rest/en/skater/summary':
             return 'skaters'
-    return 'TODO: convert route to table name'
+        case '_':
+            return None#TSK TSK - throw
+    return 'TODO: exceptions'#TODO: exceptions
 
 def DetermineTable( url ):
     route = DetermineRoute( url )
+    #conveniently routes and tables are named identically.  However, routes
+    #will return data from multiple tables due to it's design mimicking
+    #the NHL API data structure which would have relations in a database
+    #for refrential integrity 
+    pass
+
+def SaveSkaters( response ):
+    #update skaters data and any related data received from NHL API response
+    pass
+
+def SaveTeams( response ):
+    #update teams data and any related data received from NHL API response
+    pass
+
+def SaveSchedule( response ):
+    #update schedule data and any related data received from NHL API response
     pass
 
 def SaveRemoteDataToDatabase( response ):
-    DetermineTable( response.url )
+    table = DetermineTable( response.url )
+    match table:
+        case 'teams':
+            SaveTeams( response )
+        case 'schedule':
+            SaveSchedule( response )
+        case 'skaters':
+            SaveSkaters( response )
+        case None:
+            pass
     pass
 
 # simplification of requests for the NHL api
