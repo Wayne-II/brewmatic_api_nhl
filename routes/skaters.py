@@ -1,6 +1,7 @@
 from flask_restx import Namespace, Resource, fields
 from common import FetchJson
 import math
+from os import getenv
 
 #TODO: update NHL API for skaters to use new API as multiple people can be
 # fetched all at once up to 100 at a time.  One request per game scheduled 
@@ -49,7 +50,9 @@ params = {
 
 #baseUrl = "https://statsapi.web.nhl.com/api/v1/people"
 
-seasonEndYear = 2024
+seasonEndYear = 2024#TODO move to env
+SKATER_BASE_URL = getenv( 'SKATER_BASE_URL' )
+
 
 
 #baseUrl = 'https://api.nhle.com/stats/rest/en/skater/summary?gameTypeId=2 and playerId in (%s) and seasonId<=%s and seasonId>=%s'
@@ -97,7 +100,7 @@ def GenerateSkaterQueryUrls( skaterIds ):
         if querySkaterIdsEnd >= skaterCount:
             querySkaterIdsEnd = skaterCount
         querySkaterIds = ','.join( [ str(id) for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ] )
-        query = 'https://api.nhle.com/stats/rest/en/skater/summary?start=%s&limit=%s&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (%s) and seasonId=%s' % ( querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
+        query = '%s?start=%s&limit=%s&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (%s) and seasonId=%s' % ( SKATER_BASE_URL, querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
         queries.append( query )
     return queries
 
@@ -139,7 +142,6 @@ id_parser.add_argument('id', type=int, action='split')
 class Skaters( Resource ):
     def get( self ):
         args = id_parser.parse_args()
-        print( str(args))
         return FetchSkaters( args[ 'id' ] )
 
 ##################################
