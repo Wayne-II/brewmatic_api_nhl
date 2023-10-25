@@ -11,8 +11,9 @@ import datetime
 
 from flask_restx import Namespace, Resource, fields
 from common import FetchJson
+from os import getenv
 
-baseUrl = "https://statsapi.web.nhl.com/api/v1/teams"
+TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 
 # filter the team roster to only include IDs as we need to fetch them using the
 # people API in order to get injury status as well as other detailed stats
@@ -41,7 +42,7 @@ def FilterTeams( teams ):
 # fetch the raw data and filter
 def FetchTeams( teamIds ):
     teamIdsStringList = [ str( id ) for id in teamIds ]
-    requestUrl = baseUrl + "?teamId=" + ','.join( teamIdsStringList ) + '&expand=team.roster'
+    requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
     teamsJson = FetchJson( requestUrl )
     return FilterTeams( teamsJson[ 'teams' ] )
 
