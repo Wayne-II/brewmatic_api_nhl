@@ -1,6 +1,7 @@
 import datetime
 from flask_restx import Namespace, Resource, fields
 from common import FetchJson
+import os
 
 #TODO: separate games, from teams, from schedule and fetch data from local
 #database.  Done this way because the source data is fetched at each request
@@ -12,7 +13,7 @@ from common import FetchJson
 #requests on every request.  However the userbase is not large enough to
 #warrant this dev time.
 
-baseUrl = "https://statsapi.web.nhl.com/api/v1/schedule"
+SCHEDULE_BASE_URL = os.getenv( 'SCHEDULE_BASE_URL' )
 
 def GetDate():
     return datetime.date.today().strftime("%Y-%m-%d")
@@ -44,7 +45,7 @@ def FilterTeam( team ):
 # fetch and filter raw NHL data
 def FetchSchedule():
     today = GetDate()
-    scheduleJson = FetchJson( baseUrl + "?date=" + today )
+    scheduleJson = FetchJson( "%s?date=%s" % ( SCHEDULE_BASE_URL, today ) )
     filteredGames = []
     for gameDate in scheduleJson['dates']:
         if gameDate['date'] == today:
