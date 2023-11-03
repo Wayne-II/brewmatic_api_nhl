@@ -2,6 +2,8 @@ import datetime
 from flask_restx import Namespace, Resource, fields
 from common import FetchJson
 import os
+import schema
+from sqlalchemy.orm import sessionmaker
 
 #TODO: separate games, from teams, from schedule and fetch data from local
 #database.  Done this way because the source data is fetched at each request
@@ -15,8 +17,11 @@ import os
 
 SCHEDULE_BASE_URL = os.getenv( 'SCHEDULE_BASE_URL' )
 
-def GetDate():
+def GetDateString():
     return datetime.date.today().strftime("%Y-%m-%d")
+
+def GetDate():
+    return datetime.date.today()
 
 def FilterGames( games ):
     filteredGames = []
@@ -44,9 +49,10 @@ def FilterTeam( team ):
 
 # fetch and filter raw NHL data
 def FetchSchedule():
-    today = GetDate()
+    today = GetDateString()
     scheduleJson = FetchJson( "%s?date=%s" % ( SCHEDULE_BASE_URL, today ) )
     filteredGames = []
+    print( scheduleJson )
     for gameDate in scheduleJson['dates']:
         if gameDate['date'] == today:
             filteredGames = FilterGames( gameDate[ 'games' ] )
@@ -56,12 +62,100 @@ def FetchSchedule():
 # publicly availabel API flask 
 # FetchSchedule()
 
+def CheckIfDataExists():
+    Session = sessionmaker( schema.engine )
+    today = GetDateString()
+    with Session() as session:
+        exists = session.query( schema.Schedule ).filter_by( game_date=today ).first is not None
+    return exists
+
+def GetTeamName( teamId, teamsData ):
+    for team in teamsData:
+        if team.id == teamId:
+            return team.name
+    #should be impossible
+    return 'Team Name Not Found'
+
+def RetrieveData():
+    today = GetDate()
+    Session = sessionmaker( schema.engine )
+    data = []
+    with Session() as session:
+        scheduleQuery = session.query( schema.Schedule ).filter_by( game_date=today )
+        print( str( scheduleQuery ) )
+        scheduleResult = session.execute( scheduleQuery )
+        for datum in scheduleResult.scalars():
+            teamIds = ( datum.away_id, datum.home_id )
+            teamQuery = session.query( schema.Team ).filter(schema.Team.id.in_( teamIds ) )
+            teamResult = session.execute( teamQuery )
+            teamResultData = teamResult.scalars()
+            awayName = GetTeamName( datum.away_id, teamResultData )
+            homeName = GetTeamName( datum.home_id, teamResultData )
+            data.append(
+                {
+                    'teams':{
+                        'away':{
+                            'id':datum.away_id,
+                            'name':awayName
+                        },
+                        'home': {
+                            'id':datum.home_id,
+                            'name':homeName
+                        }
+                    }
+                }
+            )
+    return data
+
+def StoreData( scheduleData ):
+    today = GetDate()
+    Session = sessionmaker( schema.engine )
+    with Session() as session:
+        for game in scheduleData:
+            scheduledGame = schema.Schedule( home_id = game[ 'teams' ][ 'home' ][ 'id' ],
+                away_id = game[ 'teams' ][ 'away' ][ 'id' ],
+                game_date = today 
+            )
+            session.add( scheduledGame )
+        session.commit()
+        
+    
+    # schedule = Table(
+    #     'schedule', meta,
+    #     Column( 'id', Integer, primary_key=True),
+    #     Column( 'homeId', Integer, ForeignKey( 'teams.id' ) ),
+    #     Column( 'awayId', Integer, ForeignKey( 'teams.id' ) ),
+    #     Column( 'date', Date, primary_key=True)
+    # )
+    # [
+    #     {
+    #         "teams": {
+    #         "away": {
+    #             "id": 4,
+    #             "name": "Philadelphia Flyers"
+    #         },
+    #         "home": {
+    #             "id": 7,
+    #             "name": "Buffalo Sabres"
+    #         }
+    #         }
+    #     },...
+    #     ]
+
 api = Namespace( "schedule" )
 
 @api.route("/")
 class Schedule( Resource ):
     def get( self ):
-        return FetchSchedule()
+        ret = []
+        #if not database data, fetch from NHL and store in DB otherwise DB
+        if not CheckIfDataExists():
+            ret = FetchSchedule()
+            StoreData( ret )
+        else:
+            ret = RetrieveData()
+        return ret
+    
 
 ##################################
 # NHL API INFO FOR THIS ENDPOINT #
