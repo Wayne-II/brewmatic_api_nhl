@@ -6,7 +6,7 @@ from .skaters import api as skaters_api
 from .suggest import api as suggest_api
 
 api = Api(
-    title="NHL API"
+    title="Brewmatic API"
 )
 
 api.add_namespace( schedule_api )
