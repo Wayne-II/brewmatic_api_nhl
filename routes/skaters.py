@@ -46,18 +46,12 @@ params = {
 # %22 = "
 # %28 = (
 # %29 = )
-
-
+#OLD v1 API - limits one player stats per request - new API allows up to 100
 #baseUrl = "https://statsapi.web.nhl.com/api/v1/people"
 
 seasonEndYear = 2024#TODO move to env
 SKATER_BASE_URL = getenv( 'SKATER_BASE_URL' )
-
-
-
 #baseUrl = 'https://api.nhle.com/stats/rest/en/skater/summary?gameTypeId=2 and playerId in (%s) and seasonId<=%s and seasonId>=%s'
-
-
 #TODO: move season end year to request or configuration - maybe computed based
 # on month/year 
 
@@ -112,23 +106,8 @@ def FetchSkaters( teamIds ):
 
     queries = GenerateSkaterQueryUrls( teamIds)
     for requestUrl in queries:
-        
-        # requestUrl = baseUrl + '/' + str( skaterId )
-        # skaterJson =  FetchJson( requestUrl )
-        # filteredSkater = FilterSkater( skaterJson[ 'people' ][ 0 ] )
-        # requestUrl = baseUrl + '/' + str( skaterId ) + '/stats?stats=statsSingleSeason&season=' + seasonString
-        
-        
         statsJson = FetchJson( requestUrl )
         #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
-        #FIXME: disbaled the sorting of the data as the data response structure 
-        # has changed from apiV1 vs new api
-        # try: 
-        #     filteredStats = FilterStats( statsJson[ 'stats' ][ 0 ][ 'splits' ][ 0 ][ 'stat' ] )
-        #     filteredSkater[ 'goals' ] = filteredStats[ 'goals' ]
-        # except:
-        #     filteredSkater[ 'goals' ] = 0
-        # skaters.append( filteredSkater )
         skaters = skaters + statsJson[ 'data' ]
     return skaters
 
