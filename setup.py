@@ -5,16 +5,9 @@ from schema.schedule import Schedule
 from schema.teams import Team
 from schema.skaters import Skater
 from schema.base import Base
+from schema.engine import engine
 
-production = False
-devDbRelativePath = 'brewmatic.db'
-devEnginePath = 'sqlite:///' + os.path.abspath( devDbRelativePath )
-prodEnginePath = ''#TODO postgres database engine path
 
-enginePath = devEnginePath if not production else prodEnginePath
-
-engine = create_engine( enginePath )
-print( 'created engine %s' % ( str( engine.url ) ) )
 if not database_exists( engine.url ):
     create_database( engine.url )
     Base.metadata.create_all( engine )
