@@ -1,6 +1,10 @@
-from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Date, ForeignKey
+from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 import os
+from schema.schedule import Schedule
+from schema.teams import Team
+from schema.skaters import Skater
+from schema.base import Base
 
 production = False
 devDbRelativePath = 'brewmatic.db'
@@ -10,35 +14,10 @@ prodEnginePath = ''#TODO postgres database engine path
 enginePath = devEnginePath if not production else prodEnginePath
 
 engine = create_engine( enginePath )
+print( 'created engine %s' % ( str( engine.url ) ) )
 if not database_exists( engine.url ):
     create_database( engine.url )
-    meta = MetaData()
-
-    teams = Table(
-        'teams', meta,
-        Column('id', Integer, primary_key=True ),
-        Column('name', String ),
-        Column('abbreviation', String )
-    )
-
-    skaters = Table(
-        'skaters', meta,
-        Column('id', Integer, primary_key=True ),
-        Column( 'date', Date, primary_key=True ),
-        Column( 'lastName', String ),
-        Column( 'skaterFullName', String ),
-        Column( 'goals', Integer ),
-        Column( 'teamId', Integer, ForeignKey( 'teams.id' ), nullable=False )
-    )
-
-    schedule = Table(
-        'schedule', meta,
-        Column('id', Integer, primary_key=True),
-        Column( 'homeId', Integer, ForeignKey( 'teams.id' ) ),
-        Column( 'awayId', Integer, ForeignKey( 'teams.id' ) ),
-        Column( 'date', Date, primary_key=True)
-    )
-    meta.create_all( engine )
+    Base.metadata.create_all( engine )
     print( 'database and tables created' )
 else:
     print( 'database already exists' )
