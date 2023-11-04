@@ -1,8 +1,8 @@
 import datetime
 from flask_restx import Namespace, Resource, fields
-from common import FetchJson
+from common import FetchJson, GetDate, GetDateString
 import os
-import schema
+import models
 from sqlalchemy.orm import sessionmaker
 
 #TODO: separate games, from teams, from schedule and fetch data from local
@@ -16,12 +16,6 @@ from sqlalchemy.orm import sessionmaker
 #warrant this dev time.
 
 SCHEDULE_BASE_URL = os.getenv( 'SCHEDULE_BASE_URL' )
-
-def GetDateString():
-    return datetime.date.today().strftime("%Y-%m-%d")
-
-def GetDate():
-    return datetime.date.today()
 
 def FilterGames( games ):
     filteredGames = []
@@ -62,31 +56,36 @@ def FetchSchedule():
 # publicly availabel API flask 
 # FetchSchedule()
 
+#TODO: this check is actually broken - I think
 def CheckIfDataExists():
-    Session = sessionmaker( schema.engine )
+    Session = sessionmaker( models.engine )
     today = GetDateString()
     with Session() as session:
-        exists = session.query( schema.Schedule ).filter_by( game_date=today ).first is not None
+        exists = session.query( models.Schedule ).filter_by( game_date=today ).first() is not None
     return exists
 
 def GetTeamName( teamId, teamsData ):
     for team in teamsData:
         if team.id == teamId:
             return team.name
-    #should be impossible
+    #should be impossible - potential if new team is created/renamed
+    #this potentian should be resolved once the team data is fetched.
+    #the team save will have to check each team individually whereas
+    #schedule data SHOULD be able to assume that if some schedule data
+    #exists, it all exists - terrible assumption but we'll got with it
+    #for now
     return 'Team Name Not Found'
 
 def RetrieveData():
     today = GetDate()
-    Session = sessionmaker( schema.engine )
+    Session = sessionmaker( models.engine )
     data = []
     with Session() as session:
-        scheduleQuery = session.query( schema.Schedule ).filter_by( game_date=today )
-        print( str( scheduleQuery ) )
+        scheduleQuery = session.query( models.Schedule ).filter_by( game_date=today )
         scheduleResult = session.execute( scheduleQuery )
         for datum in scheduleResult.scalars():
             teamIds = ( datum.away_id, datum.home_id )
-            teamQuery = session.query( schema.Team ).filter(schema.Team.id.in_( teamIds ) )
+            teamQuery = session.query( models.Team ).filter(models.Team.id.in_( teamIds ) )
             teamResult = session.execute( teamQuery )
             teamResultData = teamResult.scalars()
             awayName = GetTeamName( datum.away_id, teamResultData )
@@ -109,38 +108,15 @@ def RetrieveData():
 
 def StoreData( scheduleData ):
     today = GetDate()
-    Session = sessionmaker( schema.engine )
+    Session = sessionmaker( models.engine )
     with Session() as session:
         for game in scheduleData:
-            scheduledGame = schema.Schedule( home_id = game[ 'teams' ][ 'home' ][ 'id' ],
+            scheduledGame = models.Schedule( home_id = game[ 'teams' ][ 'home' ][ 'id' ],
                 away_id = game[ 'teams' ][ 'away' ][ 'id' ],
                 game_date = today 
             )
             session.add( scheduledGame )
         session.commit()
-        
-    
-    # schedule = Table(
-    #     'schedule', meta,
-    #     Column( 'id', Integer, primary_key=True),
-    #     Column( 'homeId', Integer, ForeignKey( 'teams.id' ) ),
-    #     Column( 'awayId', Integer, ForeignKey( 'teams.id' ) ),
-    #     Column( 'date', Date, primary_key=True)
-    # )
-    # [
-    #     {
-    #         "teams": {
-    #         "away": {
-    #             "id": 4,
-    #             "name": "Philadelphia Flyers"
-    #         },
-    #         "home": {
-    #             "id": 7,
-    #             "name": "Buffalo Sabres"
-    #         }
-    #         }
-    #     },...
-    #     ]
 
 api = Namespace( "schedule" )
 
