@@ -6,15 +6,35 @@
 # this endpoint is only required to get the translation between team name and 3
 # character code EG TOR for Toronto Maple Leafs
 
+#Tim Horton's puts point awards to accounts before 6AM Eastern.  6AM Eastern
+#is probably the best time to automate the check for NHL data as the app will
+#likely have the updated information by this time.
+
 import requests
 import datetime
 
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
+from sqlalchemy.dialects.postgresql import insert as pgsql_insert
+import models
+
 from flask_restx import Namespace, Resource, fields
-from common import FetchJson
+from common import FetchJson, GetDate, GetDateString
 from os import getenv
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 
+def SaveTeams( teams ):
+    #TODO: save (upsert) teams to database with todays date
+    pass
+
+def CheckTeamsInDb( teamIds ):
+    #TODO: check if teams has data updated today
+    return False
+
+def GetTeamsFromDb( teamIds ):
+    #TODO: get data from database
+    pass
 # filter the team roster to only include IDs as we need to fetch them using the
 # people API in order to get injury status as well as other detailed stats
 def FilterTeamRoster( roster ):
@@ -42,9 +62,102 @@ def FilterTeams( teams ):
 # fetch the raw data and filter
 def FetchTeams( teamIds ):
     teamIdsStringList = [ str( id ) for id in teamIds ]
-    requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
-    teamsJson = FetchJson( requestUrl )
-    return FilterTeams( teamsJson[ 'teams' ] )
+    #TODO: check if data exists for today locally, if not, fetch it and save
+    #it to the database
+    if( CheckTeamsInDb( teamIds ) ):
+        return GetTeamsFromDb( teamIds )
+    else:
+        requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
+        teamsJson = FetchJson( requestUrl )
+        filteredTeams = FilterTeams( teamsJson[ 'teams' ] )
+        SaveTeams( filteredTeams )
+        return filteredTeams
+
+def GetInsert( session ):
+    return sqlite_insert if session.bind.dialect.name == 'sqlite' else  pgsql_insert
+
+def StoreRoster( skaterIds, teamId, session ):
+    insertData = []
+    today = GetDate()
+    for skaterId in skaterIds:
+        insertData.append( {
+            'skater_id': skaterId,
+            'team_id': teamId,
+            'updated': today
+        } )
+    insert = GetInsert( session )
+    
+    insertQuery = insert( 
+        models.Roster 
+    ).values( 
+        insertData 
+    )
+
+    conflictWhere = ( 
+        getattr( 
+            models.Roster,
+            'skater_id' 
+        ) == skaterId
+    )
+    
+    insertConflictQuery = insertQuery.on_conflict_do_update(
+        index_elements=[ 'skater_id' ],
+        #index_where= conflictWhere,
+        set_ = {
+            'team_id': teamId,
+            'updated': today
+        }
+    )
+    return insertConflictQuery
+    
+
+
+def StoreTeams( teams, session ):
+    insertData = []
+    for team in teams:
+        insertData.append( {
+            'id':team[ 'id' ],
+            'name':team[ 'name' ],
+            'abbreviation':team[ 'abbreviation' ]
+        } )
+    insert = GetInsert( session )
+    insertQuery = insert( 
+        models.Team 
+    ).values( 
+        insertData 
+    ).on_conflict_do_nothing(
+        index_elements=[ 'id' ]
+    )
+
+    return insertQuery
+
+#this is broken
+def CheckIfDataExists( teamIds ):
+    Session = sessionmaker( models.engine )
+    return False
+    # with Session() as session:
+    #     teamsQuery = session.query( models.Schedule ).filter_by(  )
+    #     teamsResults = session.execute( teamsQuery )
+    #     teamsData = teamsResults.all()
+    # return len( teamIds ) == len( teamsData )
+
+def StoreData( teamData ):
+    Session = sessionmaker( models.engine )
+    with Session() as session:
+        teamsInsert = StoreTeams( teamData, session )
+        session.execute( teamsInsert )
+        for team in teamData:
+            rosterInsert = StoreRoster( 
+                skaterIds = team[ 'roster' ], 
+                teamId = team[ 'id' ],
+                session = session
+            )
+            session.execute( rosterInsert )
+        session.commit()
+
+def RetrieveData( teamIds ):
+    ret = []
+    return ret
 
 api = Namespace( "teams" )
 
@@ -56,7 +169,27 @@ id_parser.add_argument('id', type=int, action='split')
 class Teams( Resource ):
     def get( self ):
         args = id_parser.parse_args()
+        ret = []
+        teamIds = args[ 'id' ]
+        #if not database data, fetch from NHL and store in DB otherwise DB
+        if not CheckIfDataExists( teamIds ):
+            ret = FetchTeams( teamIds )
+            StoreData( ret )
+        else:
+            ret = RetrieveData( teamIds )
+        return ret
         return FetchTeams( args[ 'id' ] )
+
+# Team Tables
+# teams:
+#     id
+#     name
+#     abbreviation
+#     teamName
+# roster:
+#     teamId
+#     skaterId
+#     dateUpdated
 
 ##################################
 # NHL API INFO FOR THIS ENDPOINT #
