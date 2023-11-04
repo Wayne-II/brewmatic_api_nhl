@@ -1,11 +1,12 @@
 from sqlalchemy import create_engine
 from sqlalchemy_utils import database_exists, create_database
 import os
-from schema.schedule import Schedule
-from schema.teams import Team
-from schema.skaters import Skater
-from schema.base import Base
-from schema.engine import engine
+from models.schedule import Schedule
+from models.teams import Team
+from models.skaters import Skater
+from models.roster import Roster
+from models.base import Base
+from models.engine import engine
 
 
 if not database_exists( engine.url ):
