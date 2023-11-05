@@ -14,12 +14,10 @@ import requests
 import datetime
 
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.dialects.sqlite import insert as sqlite_insert
-from sqlalchemy.dialects.postgresql import insert as pgsql_insert
 import models
 
 from flask_restx import Namespace, Resource, fields
-from common import FetchJson, GetDate, GetDateString
+from common import FetchJson, GetDate, GetDateString, GetInsert
 from os import getenv
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
@@ -54,13 +52,10 @@ def FetchTeams( teamIds ):
     #TODO: check if data exists for today locally, if not, fetch it and save
     #it to the database
 
-    requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
+    requestUrl = f'{TEAMS_BASE_URL}?teamId={",".join( teamIdsStringList )}&expand=team.roster'
     teamsJson = FetchJson( requestUrl )
     filteredTeams = FilterTeams( teamsJson[ 'teams' ] )
     return filteredTeams
-
-def GetInsert( session ):
-    return sqlite_insert if session.bind.dialect.name == 'sqlite' else  pgsql_insert
 
 def StoreRoster( skaterIds, teamId, session ):
     insertData = []
@@ -73,30 +68,18 @@ def StoreRoster( skaterIds, teamId, session ):
         } )
     insert = GetInsert( session )
     
-    insertQuery = insert( 
+    insertConflictQuery = insert( 
         models.Roster 
     ).values( 
         insertData 
-    )
-
-    conflictWhere = ( 
-        getattr( 
-            models.Roster,
-            'skater_id' 
-        ) == skaterId
-    )
-    
-    insertConflictQuery = insertQuery.on_conflict_do_update(
+    ).on_conflict_do_update(
         index_elements=[ 'skater_id' ],
-        #index_where= conflictWhere,
         set_ = {
             'team_id': teamId,
             'updated': today
         }
     )
     return insertConflictQuery
-    
-
 
 def StoreTeams( teams, session ):
     insertData = []
@@ -107,7 +90,7 @@ def StoreTeams( teams, session ):
             'abbreviation':team[ 'abbreviation' ]
         } )
     insert = GetInsert( session )
-    insertQuery = insert( 
+    insertConflictQuery = insert( 
         models.Team 
     ).values( 
         insertData 
@@ -115,7 +98,7 @@ def StoreTeams( teams, session ):
         index_elements=[ 'id' ]
     )
 
-    return insertQuery
+    return insertConflictQuery
 
 #this is broken
 def CheckIfDataExists( teamIds ):
@@ -187,18 +170,6 @@ class Teams( Resource ):
         else:
             ret = RetrieveData( teamIds )
         return ret
-        return FetchTeams( args[ 'id' ] )
-
-# Team Tables
-# teams:
-#     id
-#     name
-#     abbreviation
-#     teamName
-# roster:
-#     teamId
-#     skaterId
-#     dateUpdated
 
 ##################################
 # NHL API INFO FOR THIS ENDPOINT #
