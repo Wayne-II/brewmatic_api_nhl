@@ -8,7 +8,8 @@ from models.roster import Roster
 from models.base import Base
 from models.engine import engine
 
-
+#FOR USE WITH DEVELOPMENT ONLY!!!
+#USE deploy.py FOR PRODUCTION DEPLOYMENT
 if not database_exists( engine.url ):
     create_database( engine.url )
     Base.metadata.create_all( engine )
