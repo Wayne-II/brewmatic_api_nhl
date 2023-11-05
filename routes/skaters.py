@@ -1,7 +1,10 @@
 from flask_restx import Namespace, Resource, fields
-from common import FetchJson
+from common import FetchJson, GetInsert, GetDate, GetDateString
 import math
 from os import getenv
+from sqlalchemy.orm import sessionmaker
+import models
+
 
 #TODO: update NHL API for skaters to use new API as multiple people can be
 # fetched all at once up to 100 at a time.  One request per game scheduled 
@@ -111,6 +114,74 @@ def FetchSkaters( teamIds ):
         skaters = skaters + statsJson[ 'data' ]
     return skaters
 
+def CheckIfDataExists( skaterIds ):
+    Session = sessionmaker( models.engine )
+    today = GetDateString()
+    with Session() as session:
+        exists = session.query( models.Skater ).filter_by( updated=today ).first() is not None
+    return exists
+
+def StoreSkatersQuery( skaters, session ):
+    insertData = []
+    today = GetDate()
+
+    for skater in skaters:
+        insertData.append( {
+            'id':skater[ 'playerId' ],
+            'skater_full_name':skater[ 'skaterFullName' ],
+            'goals':skater[ 'goals' ],
+            'last_name': skater[ 'lastName' ],
+            'updated': today,
+            'team_abbrevs': skater[ 'teamAbbrevs' ]
+        } )
+
+    insert = GetInsert( session )
+
+    insertConflictQuery = insert( 
+        models.Skater 
+    ).values( 
+        insertData 
+    ).on_conflict_do_update(
+        index_elements=[ 'id' ],
+        set_ = {
+            'goals': skater[ 'goals' ],
+            'updated': today,
+            #TODO: used for now as UI depends on it.  will fix UI
+            'team_abbrevs':skater[ 'teamAbbrevs' ]
+        }
+    )
+    
+    return insertConflictQuery
+
+def StoreData( skaterData ):
+    Session = sessionmaker( models.engine )
+    with Session() as session:
+        skatersInsert = StoreSkatersQuery( skaterData, session )
+        session.execute( skatersInsert )
+        session.commit()
+
+def RetrieveData( skaterIds ):
+    Session = sessionmaker( models.engine )
+    ret = []
+    with Session() as session:
+        skatersQuery = session.query( 
+            models.Skater
+        ).filter(
+            models.Skater.id.in_( skaterIds ) 
+        )
+        
+        skatersResults = session.scalars( skatersQuery ).all()
+        
+        for skater in skatersResults:
+            ret.append( {
+                'playerId': skater.id,
+                'skaterFullName': skater.skater_full_name,
+                'goals': skater.goals,
+                'lastName': skater.last_name,
+                'teamAbbrevs':skater.team_abbrevs
+            } )
+    return ret
+
 api = Namespace( "skaters" )
 
 id_parser = api.parser()
@@ -122,6 +193,18 @@ class Skaters( Resource ):
     def get( self ):
         args = id_parser.parse_args()
         return FetchSkaters( args[ 'id' ] )
+    
+    def get( self ):
+        args = id_parser.parse_args()
+        ret = []
+        skaterIds = args[ 'id' ]
+        #if not database data, fetch from NHL and store in DB otherwise DB
+        if not CheckIfDataExists( skaterIds ):
+            ret = FetchSkaters( skaterIds )
+            StoreData( ret )
+        else:
+            ret = RetrieveData( skaterIds )
+        return ret
 
 ##################################
 # NHL API INFO FOR THIS ENDPOINT #
