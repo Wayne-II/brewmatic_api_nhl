@@ -3,9 +3,12 @@ from .base import Base
 
 class Skater( Base ):
     __tablename__ = 'skaters'
-    id = Column( Integer, primary_key=True )
-    join_date = Column( Date, primary_key=True )
-    lase_name = Column( String )
+    #id provided by NHL and is used in roster to link skaters to teams
+    id = Column( Integer, primary_key=True, autoincrement=False )
+    updated = Column( Date )
+    #last_name is pointless unless we want to display <Initial>. <Last Name>
+    #this is a likely scenario to save display space
+    last_name = Column( String )
     skater_full_name = Column( String )
     goals = Column( Integer )
-    team_id = Column( Integer, ForeignKey( 'teams.id' ), nullable=False )
+    team_abbrevs = Column( String )
