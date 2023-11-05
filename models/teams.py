@@ -11,9 +11,5 @@ class Team( Base ):
     #TODO: last updated field to keep track if teams was updated
     # will use roster for now
 
-# @compiles( Insert, 'sqlite')
-# def generate_insert( insert, compiler, **kwargs ):
-#     stmt = compiler.visit_insert( insert, **kwargs )
-#     if insert.dialect_kwargs.get( 'sqlite_on_conflict_do_nothing' ):
-#         stmt += ' ON CONFLICT DO NOTHING'
-#     return stmt
+    def __repr__(self):
+        return f'Team(id: {self.id}, name: \'{self.name}\', abbreviation: \'{self.abbreviation}\')'

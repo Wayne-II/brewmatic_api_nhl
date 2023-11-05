@@ -7,3 +7,6 @@ class Roster( Base ):
     skater_id = Column( Integer, ForeignKey( 'skaters.id' ), nullable=False, unique=True )
     team_id = Column( Integer, ForeignKey( 'teams.id' ), nullable=False )
     updated = Column( Date )
+
+    def __retr__( self ):
+        print( f'Roster(id: {self.id}, skater_id: {self.skater_id}, team_id: {self.team_id}, updated: {self.updated},)' )
