@@ -24,17 +24,6 @@ from os import getenv
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 
-def SaveTeams( teams ):
-    #TODO: save (upsert) teams to database with todays date
-    pass
-
-def CheckTeamsInDb( teamIds ):
-    #TODO: check if teams has data updated today
-    return False
-
-def GetTeamsFromDb( teamIds ):
-    #TODO: get data from database
-    pass
 # filter the team roster to only include IDs as we need to fetch them using the
 # people API in order to get injury status as well as other detailed stats
 def FilterTeamRoster( roster ):
@@ -64,14 +53,11 @@ def FetchTeams( teamIds ):
     teamIdsStringList = [ str( id ) for id in teamIds ]
     #TODO: check if data exists for today locally, if not, fetch it and save
     #it to the database
-    if( CheckTeamsInDb( teamIds ) ):
-        return GetTeamsFromDb( teamIds )
-    else:
-        requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
-        teamsJson = FetchJson( requestUrl )
-        filteredTeams = FilterTeams( teamsJson[ 'teams' ] )
-        SaveTeams( filteredTeams )
-        return filteredTeams
+
+    requestUrl = '%s?teamId=%s&expand=team.roster' % ( TEAMS_BASE_URL, ','.join( teamIdsStringList ) )
+    teamsJson = FetchJson( requestUrl )
+    filteredTeams = FilterTeams( teamsJson[ 'teams' ] )
+    return filteredTeams
 
 def GetInsert( session ):
     return sqlite_insert if session.bind.dialect.name == 'sqlite' else  pgsql_insert
@@ -134,12 +120,10 @@ def StoreTeams( teams, session ):
 #this is broken
 def CheckIfDataExists( teamIds ):
     Session = sessionmaker( models.engine )
-    return False
-    # with Session() as session:
-    #     teamsQuery = session.query( models.Schedule ).filter_by(  )
-    #     teamsResults = session.execute( teamsQuery )
-    #     teamsData = teamsResults.all()
-    # return len( teamIds ) == len( teamsData )
+    today = GetDateString()
+    with Session() as session:
+        exists = session.query( models.Roster ).filter_by( updated=today ).first() is not None
+    return exists
 
 def StoreData( teamData ):
     Session = sessionmaker( models.engine )
@@ -156,7 +140,32 @@ def StoreData( teamData ):
         session.commit()
 
 def RetrieveData( teamIds ):
+    Session = sessionmaker( models.engine )
     ret = []
+    with Session() as session:
+        teamQuery = session.query( 
+            models.Team 
+        ).filter(
+            models.Team.id.in_( teamIds ) 
+        )
+        
+        rosterQuery = session.query( 
+            models.Roster
+        ).filter(
+            models.Roster.team_id.in_( teamIds ) 
+        )
+        
+        teamResults = session.scalars( teamQuery ).all()
+        rosterResults = session.scalars( rosterQuery ).all()
+        
+        for team in teamResults:
+            roster = [ roster.skater_id for roster in rosterResults if roster.team_id == team.id ]
+            ret.append( {
+                'id': team.id,
+                'name': team.name,
+                'abbreviation': team.abbreviation,
+                'roster': roster
+            } )
     return ret
 
 api = Namespace( "teams" )
@@ -196,15 +205,12 @@ class Teams( Resource ):
 ##################################
 # Filtered output example
 ##################################
-# {
-#   "teams" : [ {
+# [ {
 #     "id" : 9,
 #     "name" : "Ottawa Senators",
 #     "abbreviation" : "OTT",
-#     "teamName" : "Senators",
 #     "roster" : [ 8477353,...]
 #   } ]
-# }
 
 ##################################
 # RAW NHL API OUTPUT             #
