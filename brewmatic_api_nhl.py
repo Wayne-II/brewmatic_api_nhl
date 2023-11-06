@@ -11,7 +11,7 @@
 #POC: this is a proof of concept v2 using NHL public API instead of table
 #scaraping hockeyreference.com
 
-#investigate 
+#investigate https://statsapi.web.nhl.com/api/v1/configurations
 #figured out more to the NHL stats API able to get all player stats for a give shcedule with a single request.
 #https://statsapi.web.nhl.com/api/v1/teams/?teamId=3,4,5&stats=statsSingleSeason&season=20232024&expand=team.roster,roster.person,person.stats
 #descriptions below
