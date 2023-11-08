@@ -3,6 +3,7 @@ from .base import Base
 
 class Skater( Base ):
     __tablename__ = 'skaters'
+    __table_args__ = {'extend_existing':True}
     #id provided by NHL and is used in roster to link skaters to teams
     id = Column( Integer, primary_key=True, autoincrement=False )
     updated = Column( Date )
