@@ -27,15 +27,7 @@ def GetSkaterIdByName( skaterName, session ):
     ).filter(
         models.Skater.skater_full_name == skaterName
     )
-    q = str( skatersQuery)
-    print( f'get skater id by name query: {q}')
-    
     skaterResults = session.scalars( skatersQuery ).all()
-    print('#')
-    print( skaterResults )
-    print('#')
-    print( skaterName )
-    print('#')
     if len( skaterResults ) > 0:
         ret = skaterResults[ 0 ].id 
     return ret
@@ -50,13 +42,10 @@ def StoreData( injuryData, session ):
         for injury in injuryData[ teamId ][ 'injury' ]:
             injured = injury[ 'name' ]
             injuryType = injury[ 'injury' ]
-            
-            print( '#')
-            print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-            print( '#')
-            print( '#')
             skaterId = GetSkaterIdByName( injured.strip(), session )
-            print( f'injured {injured} id: {skaterId}' )
+            if( skaterId == 0 ):#TODO: error logging, exception handling, etc
+                #TODO: throw
+                print( f'injured {injured} id: {skaterId} type: {injuryType}' )
             status = 'I'
             injuryInsertData.append( {
                 'skater_id': skaterId,
@@ -65,11 +54,9 @@ def StoreData( injuryData, session ):
                 'updated': today
             } )
         for scratched in injuryData[ teamId ][ 'scratch' ]:
-            print( '#')
-            print( '#')
-            print( '#')
             skaterId = GetSkaterIdByName( scratched, session )
-            print( f'scratched {scratched} id: {skaterId}' )
+            if skaterId == 0:
+                print( f'scratched {scratched} id: {skaterId}' )
             status = 'S'
             scratchInsertData.append( {
                 'skater_id': skaterId,
@@ -107,6 +94,7 @@ def StoreData( injuryData, session ):
             'injury_type':insertQuery.excluded.injury_type
         }
     )
+    session.execute( conflictQuery )
     session.commit()
 
 def RetrieveData( session ):
@@ -121,16 +109,11 @@ def RetrieveData( session ):
     ).filter(
         models.Injury.updated == today
     )
-
-    print( str(injuryQuery) )
     
     injuryResults = session.scalars( injuryQuery ).all()
-    print (injuryResults)
     for injuryResult in injuryResults:
         #the fact I have to baby this while jsonify doesn't work makes me think jsonify is a bit
         #useless. 
-        print( injuryResult ) 
-        print( injuryResult.jsonify())
         ret.append( {
             'skater_id':injuryResult.skater_id,
             'status':injuryResult.status,
@@ -264,9 +247,6 @@ def FetchInjury():
                         elif lineDatum == 'Status report':
                             ret[ teamCommonName ][ 'status' ] = ProcessStatus( teamLineupData[ lineIdx + 1 ] )
     return ret                   
-                        
-
-
 
 api = Namespace( "injury" )
 
@@ -277,7 +257,6 @@ class Injury( Resource ):
         #if not database data, fetch from NHL and store in DB otherwise DB
         Session = sessionmaker( models.engine )
         with Session() as session:
-            
             if not CheckIfDataExists(  ):
                 raw = FetchInjury(  )
                 StoreData( raw, session )
