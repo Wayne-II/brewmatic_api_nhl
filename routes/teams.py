@@ -120,69 +120,6 @@ def CheckIfDataExists( teamIds ):
     return exists
 
 def StoreData( teamData ):
-    #old format
-    #"roster" : {
-    #   "roster" : [ {
-    #     "person" : {
-    #       "id" : 8479323,
-    #       "fullName" : "Adam Fox",
-    #       "link" : "/api/v1/people/8479323"
-    #     },
-    #     "jerseyNumber" : "23",
-    #     "position" : {
-    #       "code" : "D",
-    #       "name" : "Defenseman",
-    #       "type" : "Defenseman",
-    #       "abbreviation" : "D"
-    #     }
-    #   }
-    # ]
-    #}
-
-    #adding roster.person to expands format RAW
-    # "roster" : {
-    #   "roster" : [ {
-    #     "person" : {
-    #       "id" : 8479323,
-    #       "fullName" : "Adam Fox",
-    #       "link" : "/api/v1/people/8479323",
-    #       "firstName" : "Adam",
-    #       "lastName" : "Fox",
-    #       "primaryNumber" : "23",
-    #       "birthDate" : "1998-02-17",
-    #       "currentAge" : 25,
-    #       "birthCity" : "Jericho",
-    #       "birthStateProvince" : "NY",
-    #       "birthCountry" : "USA",
-    #       "nationality" : "USA",
-    #       "height" : "5' 11\"",
-    #       "weight" : 185,
-    #       "active" : true,
-    #       "alternateCaptain" : true,
-    #       "captain" : false,
-    #       "rookie" : false,
-    #       "shootsCatches" : "R",
-    #       "rosterStatus" : "I",
-    #       "currentTeam" : {
-    #         "id" : 3,
-    #         "name" : "New York Rangers",
-    #         "link" : "/api/v1/teams/3"
-    #       },
-    #       "primaryPosition" : {
-    #         "code" : "D",
-    #         "name" : "Defenseman",
-    #         "type" : "Defenseman",
-    #         "abbreviation" : "D"
-    #       }
-    #     },
-    #     "jerseyNumber" : "23",
-    #     "position" : {
-    #       "code" : "D",
-    #       "name" : "Defenseman",
-    #       "type" : "Defenseman",
-    #       "abbreviation" : "D"
-    #     }
-    #   },
     Session = sessionmaker( models.engine )
     with Session() as session:
         teamsInsert = StoreTeams( teamData, session )
