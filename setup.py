@@ -7,15 +7,16 @@ from models.skaters import Skater
 from models.roster import Roster
 from models.base import Base
 from models.engine import engine
+from models.injury import Injury
 
 #FOR USE WITH DEVELOPMENT ONLY!!!
 #USE deploy.py FOR PRODUCTION DEPLOYMENT
 if not database_exists( engine.url ):
     create_database( engine.url )
-    Base.metadata.create_all( engine )
-    print( 'database and tables created' )
-else:
-    print( 'database already exists' )
+    print( 'Database created')
+Base.metadata.create_all( engine )
+Base.metadata
+print( 'Tables created or updated' )
 
 
 
