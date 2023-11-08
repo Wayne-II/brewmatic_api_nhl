@@ -5,6 +5,12 @@ from os import getenv
 from sqlalchemy.orm import sessionmaker
 import models
 
+#TODO: There appears to be an issue with players which don't have stats not
+#showing up in the new API as the new api only returs the person if they have
+#active stats for the requested season.  Eg.  Toronto Jake Muzzins, is still
+#listed in the roster for 20232024 season but has retired and is a pro-scout.
+#Similaarly, Conor Timmins, also on Toronto, has been out with an upper body
+#injury which is is still recovering from the following season.
 
 #TODO: update NHL API for skaters to use new API as multiple people can be
 # fetched all at once up to 100 at a time.  One request per game scheduled 
@@ -15,6 +21,8 @@ import models
 # which translates to SQL query where clause part "playerId in (8478402,8478403)"
 # https://api.nhle.com/stats/rest/en/skater/summary?isAggregate=false&isGame=false&sort=%5B%7B%22property%22:%22goals%22,%22direction%22:%22DESC%22%7D,%7B%22property%22:%22points%22,%22direction%22:%22DESC%22%7D,%7B%22property%22:%22gamesPlayed%22,%22direction%22:%22ASC%22%7D,%7B%22property%22:%22playerId%22,%22direction%22:%22ASC%22%7D%5D&start=0&limit=334&factCayenneExp=gamesPlayed%3E=1&cayenneExp=gameTypeId%3E=2%20and%20playerId%20in%20%288478402,8478403%29%20and%20seasonId%3C=20222023%20and%20seasonId%3E=20222023
 
+#TODO: revert to old API as there's a way to get the entire schedule, teams,
+#roster, skaters, and stats in a single request using the old api.
 newBase = "https://api.nhle.com/stats/rest/en/skater/summary"
 params = {
     'isAggregate':'false',
@@ -97,7 +105,10 @@ def GenerateSkaterQueryUrls( skaterIds ):
         if querySkaterIdsEnd >= skaterCount:
             querySkaterIdsEnd = skaterCount
         querySkaterIds = ','.join( [ str(id) for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ] )
-        query = '%s?start=%s&limit=%s&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (%s) and seasonId=%s' % ( SKATER_BASE_URL, querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
+        query = '%s?start=%s&limit=%s&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (%s) and seasonId=%s and rosterStatus in ("Y", "I")' % ( SKATER_BASE_URL, querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
+
+        # t='https://api.nhle.com/stats/rest/en/skater/summary?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (8479982) and seasonId=20232024 and rosterStatus in ( "Y", "I" )' % (querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
+
         queries.append( query )
     return queries
 
@@ -116,8 +127,17 @@ def FetchSkaters( teamIds ):
 
 def CheckIfDataExists( skaterIds ):
     Session = sessionmaker( models.engine )
-    today = GetDateString()
+    today = GetDate()
+    exists = False
     with Session() as session:
+        skaterIdsQuery = session.query( 
+            models.Skater
+        ).filter(
+            models.Skater.id.in_( skaterIds ),
+            models.Skater.updated == today
+        )
+
+        skaterIdsResults = session.scalars( skaterIdsQuery )
         exists = session.query( models.Skater ).filter_by( updated=today ).first() is not None
     return exists
 
@@ -201,6 +221,7 @@ class Skaters( Resource ):
         #if not database data, fetch from NHL and store in DB otherwise DB
         if not CheckIfDataExists( skaterIds ):
             ret = FetchSkaters( skaterIds )
+            print( str( ret ) )
             StoreData( ret )
         else:
             ret = RetrieveData( skaterIds )

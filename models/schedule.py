@@ -9,3 +9,5 @@ class Schedule( Base ):
     away_id = Column( Integer, ForeignKey( 'teams.id' ) )
     game_date = Column( Date )
 
+#TODO: new schedule API https://api-web.nhle.com/v1/scoreboard/
+#this endpoint provides team records

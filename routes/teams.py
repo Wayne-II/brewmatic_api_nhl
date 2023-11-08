@@ -24,10 +24,20 @@ TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 
 # filter the team roster to only include IDs as we need to fetch them using the
 # people API in order to get injury status as well as other detailed stats
+
+#TODO: Filter Roster and Filter Team are being hacked to leverage the new 
+#discoveries of the old API that will allow for fetching all data by 
+#combining expands.  expanding roster person to see roster status.
+#will have to keep track of the skaters without a skaters entry but have a
+#roster entry.  will have to save roster status.  keeping list of IDs so it
+#continues to work wi=hile I implement it completely.
 def FilterTeamRoster( roster ):
-    filteredRoster = []
+    filteredRoster = ([],[])
+    rosterKeys = [ 'id', 'rosterStatus' ]
     for person in roster:
-        filteredRoster.append( person[ 'person' ][ 'id' ] )
+
+        filteredRoster[0].append( person[ 'person' ][ 'id' ] )
+        filteredRoster[1].append( { key: person['person'][ key ] for key in rosterKeys } )
     return filteredRoster   
 
 # filter a team to only include the require information.  The datum fileds
@@ -36,7 +46,8 @@ def FilterTeam( team ):
     teamKeys = [ 'id', 'name', 'abbreviation' ]
     roster = FilterTeamRoster( team[ 'roster' ][ 'roster' ] )
     filteredTeam = { key: team[ key ] for key in teamKeys }
-    filteredTeam[ 'roster' ] = roster
+    filteredTeam[ 'rosterStatus' ] = roster[1]
+    filteredTeam[ 'roster' ] = roster[0]
     return filteredTeam
 
 #filter the raw teams data so that only required information is required
@@ -52,7 +63,7 @@ def FetchTeams( teamIds ):
     #TODO: check if data exists for today locally, if not, fetch it and save
     #it to the database
 
-    requestUrl = f'{TEAMS_BASE_URL}?teamId={",".join( teamIdsStringList )}&expand=team.roster'
+    requestUrl = f'{TEAMS_BASE_URL}?teamId={",".join( teamIdsStringList )}&expand=team.roster,roster.person'
     teamsJson = FetchJson( requestUrl )
     filteredTeams = FilterTeams( teamsJson[ 'teams' ] )
     return filteredTeams
@@ -109,6 +120,69 @@ def CheckIfDataExists( teamIds ):
     return exists
 
 def StoreData( teamData ):
+    #old format
+    #"roster" : {
+    #   "roster" : [ {
+    #     "person" : {
+    #       "id" : 8479323,
+    #       "fullName" : "Adam Fox",
+    #       "link" : "/api/v1/people/8479323"
+    #     },
+    #     "jerseyNumber" : "23",
+    #     "position" : {
+    #       "code" : "D",
+    #       "name" : "Defenseman",
+    #       "type" : "Defenseman",
+    #       "abbreviation" : "D"
+    #     }
+    #   }
+    # ]
+    #}
+
+    #adding roster.person to expands format RAW
+    # "roster" : {
+    #   "roster" : [ {
+    #     "person" : {
+    #       "id" : 8479323,
+    #       "fullName" : "Adam Fox",
+    #       "link" : "/api/v1/people/8479323",
+    #       "firstName" : "Adam",
+    #       "lastName" : "Fox",
+    #       "primaryNumber" : "23",
+    #       "birthDate" : "1998-02-17",
+    #       "currentAge" : 25,
+    #       "birthCity" : "Jericho",
+    #       "birthStateProvince" : "NY",
+    #       "birthCountry" : "USA",
+    #       "nationality" : "USA",
+    #       "height" : "5' 11\"",
+    #       "weight" : 185,
+    #       "active" : true,
+    #       "alternateCaptain" : true,
+    #       "captain" : false,
+    #       "rookie" : false,
+    #       "shootsCatches" : "R",
+    #       "rosterStatus" : "I",
+    #       "currentTeam" : {
+    #         "id" : 3,
+    #         "name" : "New York Rangers",
+    #         "link" : "/api/v1/teams/3"
+    #       },
+    #       "primaryPosition" : {
+    #         "code" : "D",
+    #         "name" : "Defenseman",
+    #         "type" : "Defenseman",
+    #         "abbreviation" : "D"
+    #       }
+    #     },
+    #     "jerseyNumber" : "23",
+    #     "position" : {
+    #       "code" : "D",
+    #       "name" : "Defenseman",
+    #       "type" : "Defenseman",
+    #       "abbreviation" : "D"
+    #     }
+    #   },
     Session = sessionmaker( models.engine )
     with Session() as session:
         teamsInsert = StoreTeams( teamData, session )
