@@ -21,6 +21,7 @@ from common import FetchJson, GetDate, GetDateString, GetInsert
 from os import getenv
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
+TRICODE_BASE_URL = getenv( 'TRICODE_BASE_URL' )
 SEASON_ID = 20232024#todo add to env
 
 # filter the team roster to only include IDs as we need to fetch them using the
@@ -57,11 +58,36 @@ def FilterTeams( teams ):
         filteredTeams.append( FilterTeam( team ) )
     return filteredTeams
 
+def GetTricodeByTeamId( teamId, tricodeJson ):
+    for team in tricodeJson:
+        if team[ 'id' ] == teamId:
+            return team[ 'triCode' ]
+    return 'NHL'
+
+def UpdateFilteredTeamsWithTriCodes( filteredTeams, tricodeJson ):
+    ret = []
+    for team in filteredTeams:
+        team[ 'triCode' ] = GetTricodeByTeamId( team[ 'teamId' ], tricodeJson )
+        ret.append( team )
+    return ret
+        
+        
+
+def GetTeamTriCodes( filteredTeams ):
+    teamIds = [ team[ 'teamId' ] for team in filteredTeams]    
+    teamIdsString = ",".join( map( str, teamIds ) )
+    
+    requestUrl = f'{TRICODE_BASE_URL}?cayenneExp=id in ( { teamIdsString })'
+    tricodeJson = FetchJson( requestUrl )
+    return UpdateFilteredTeamsWithTriCodes( filteredTeams, tricodeJson[ 'data' ] )
+
+
 # fetch the raw data and filter
 def FetchTeams(  ):
     requestUrl = f'{TEAMS_BASE_URL}?cayenneExp=seasonId={SEASON_ID}'
     teamsJson = FetchJson( requestUrl )
     filteredTeams = FilterTeams( teamsJson[ 'data' ] )
+    filteredTeams = GetTeamTriCodes( filteredTeams )
     return filteredTeams
 #TODO update to new api
 def StoreRoster( skaterIds, teamId, session ):
