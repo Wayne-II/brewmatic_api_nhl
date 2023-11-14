@@ -125,19 +125,23 @@ def GenerateRosterQuery( skaterIds, teamId, session ):
     )
     return insertConflictQuery
 
+
+
 #Store team data, including tri code
 def GenerateTeamsQuery( teams, session ):
+    today = GetDate()
     insertData = []
     for team in teams:
         insertData.append( {
-            "team_id" : team.team_id,
-            "losses" : team.losses,
-            "ot_losses" : team.otLosses,
-            "team_full_name" : team.teamFullName,
-            "ties" : team.ties,
-            "wins" : team.wins,
-            "wins_in_regulation" : team.winsInRegulation,
-            "tri_code" : team.triCode
+            "team_id" : team[ 'teamId' ],
+            "losses" : team[ 'losses' ],
+            "ot_losses" : team[ 'otLosses' ],
+            "team_full_name" : team[ 'teamFullName' ],
+            "ties" : team[ 'ties' ],
+            "wins" : team[ 'wins' ],
+            "wins_in_regulation" : team[ 'winsInRegulation' ],
+            "tri_code" : team[ 'triCode' ],
+            "updated" : today
         } )
 
     insert = GetInsert( session )
@@ -156,6 +160,7 @@ def GenerateTeamsQuery( teams, session ):
             "ties" : insertQuery.excluded.ties,
             "wins" : insertQuery.excluded.wins,
             "wins_in_regulation" : insertQuery.excluded.wins_in_regulation,
+            "updated" : today
         }
     )
 
@@ -166,7 +171,8 @@ def CheckIfDataExists(  ):
     Session = sessionmaker( models.engine )
     today = GetDateString()
     with Session() as session:
-        exists = session.query( models.Roster ).filter_by( updated=today ).first() is not None
+        selectQuery = session.query( models.Team ).filter_by( updated=today )
+        exists = len( session.scalars( selectQuery ).all() ) > 0
     return exists
 
 #Store team and roster data, including triCode
@@ -178,20 +184,32 @@ def StoreData( teamData ):
         for team in teamData:
             rosterInsert = GenerateRosterQuery( 
                 skaterIds = team[ 'roster' ], 
-                teamId = team[ 'id' ],
+                teamId = team[ 'teamId' ],
                 session = session
             )
             session.execute( rosterInsert )
         session.commit()
+
+def GetAllTeamIds():
+    #TODO: this shouldn't happen - flag suspicious request
+    Session = sessionmaker( models.engine )
+    ret = []
+    with Session() as session:
+        selectQuery = session.query( models.Team.team_id )
+        results = session.scalars( selectQuery ).all()
+        #TODO: exception handling
+        ret = results if results else []
+    return ret
+
 #TODO: update to new api
-def RetrieveData(  ):
+def RetrieveData( teamIds ):
     Session = sessionmaker( models.engine )
     ret = []
     with Session() as session:
         teamQuery = session.query( 
             models.Team 
         ).filter(
-            models.Team.id.in_( teamIds ) 
+            models.Team.team_id.in_( teamIds ) 
         )
         
         rosterQuery = session.query( 
@@ -202,29 +220,41 @@ def RetrieveData(  ):
         
         teamResults = session.scalars( teamQuery ).all()
         rosterResults = session.scalars( rosterQuery ).all()
-        
+        print( 'team results ')
+        print( teamResults)
         for team in teamResults:
             roster = [ roster.skater_id for roster in rosterResults if roster.team_id == team.id ]
             ret.append( {
-                'id': team.id,
-                'name': team.name,
-                'abbreviation': team.abbreviation,
+                "team_id" : team.teamId,
+                "losses" : team.losses,
+                "ot_losses" : team.otLosses,
+                "team_full_name" : team.teamFullName,
+                "ties" : team.ties,
+                "wins" : team.wins,
+                "wins_in_regulation" : team.winsInRegulation,
+                "tri_code" : team.triCode,
                 'roster': roster
             } )
     return ret
 
 api = Namespace( "teams" )
 
+team_id_parser = api.parser()
+team_id_parser.add_argument('teamId', type=int, action='split')
+
 @api.route("/")
 class Teams( Resource ):
     def get( self ):
         ret = []
+        args = team_id_parser.parse_args()
+        #TODO: exception handling
+        teamIds = args[ 'teamId' ] if 'teamId' in args.keys() and args[ 'teamId' ] else GetAllTeamIds()
         #until everything is fixed we're just going to fetch all teams
+        #TODO: eventually the fetching 3rd party data and storing it in the database will be gone
         if not CheckIfDataExists():
-            ret = FetchTeams()
-            #StoreData( ret )
-        else:
-            ret = RetrieveData()
+            fetched = FetchTeams()
+            StoreData( fetched )
+        ret = RetrieveData( teamIds )
         return ret
 
 sample = {
