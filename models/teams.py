@@ -58,6 +58,11 @@ class Team( Base ):
     @property
     def winsInRegulation( self ):
         return self.wins_in_regulation
+    ################### wins_code overloads
+    @property
+    def triCode( self ):
+        return self.tri_code
+    
     
 
 
