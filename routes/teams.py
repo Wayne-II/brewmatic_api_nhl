@@ -22,6 +22,7 @@ from os import getenv
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 TRICODE_BASE_URL = getenv( 'TRICODE_BASE_URL' )
+ROSTER_BASE_URL = getenv( 'ROSTER_BASE_URL' )
 SEASON_ID = 20232024#todo add to env
 
 # filter the team roster to only include IDs as we need to fetch them using the
@@ -35,14 +36,13 @@ SEASON_ID = 20232024#todo add to env
 #continues to work wi=hile I implement it completely.
 
 #TODO: keeping this to get new endpoint that will be required to fetch rosters
-def FilterTeamRoster( roster ):
-    filteredRoster = ([],[])
-    rosterKeys = [ 'id', 'rosterStatus' ]
-    for person in roster:
 
-        filteredRoster[0].append( person[ 'person' ][ 'id' ] )
-        filteredRoster[1].append( { key: person['person'][ key ] for key in rosterKeys } )
-    return filteredRoster   
+def FilterRoster( roster ):  
+    filteredRoster = []
+    mergedRoster = roster[ 'forwards' ] + roster[ 'defensemen' ] + roster[ 'goalies' ] 
+    for skater in mergedRoster:
+        filteredRoster.append( skater[ 'id' ] )
+    return filteredRoster 
 
 # filter a team to only include the require information.  The datum fileds
 # being id, name, abbreviation, and a roster of IDs to fetch detailed info
@@ -62,7 +62,7 @@ def GetTricodeByTeamId( teamId, tricodeJson ):
     for team in tricodeJson:
         if team[ 'id' ] == teamId:
             return team[ 'triCode' ]
-    return 'NHL'
+    return 'NHL'#shouldn't happen TODO exception handling
 
 def UpdateFilteredTeamsWithTriCodes( filteredTeams, tricodeJson ):
     ret = []
@@ -70,27 +70,36 @@ def UpdateFilteredTeamsWithTriCodes( filteredTeams, tricodeJson ):
         team[ 'triCode' ] = GetTricodeByTeamId( team[ 'teamId' ], tricodeJson )
         ret.append( team )
     return ret
-        
-        
 
-def GetTeamTriCodes( filteredTeams ):
+def AddTeamTriCodes( filteredTeams ):
     teamIds = [ team[ 'teamId' ] for team in filteredTeams]    
     teamIdsString = ",".join( map( str, teamIds ) )
-    
     requestUrl = f'{TRICODE_BASE_URL}?cayenneExp=id in ( { teamIdsString })'
     tricodeJson = FetchJson( requestUrl )
     return UpdateFilteredTeamsWithTriCodes( filteredTeams, tricodeJson[ 'data' ] )
 
+def AddTeamRoster( filteredTeams ):
+    ret = []
+    for team in filteredTeams:
+        triCode = team[ "triCode" ]
+        requestUrl = f'{ROSTER_BASE_URL}/{triCode}/{SEASON_ID}'
+        rosterJson = FetchJson( requestUrl )
+        team[ 'roster' ] = FilterRoster( rosterJson )
+        ret.append( team )
+    return ret
+
 
 # fetch the raw data and filter
-def FetchTeams(  ):
+def FetchTeams():
     requestUrl = f'{TEAMS_BASE_URL}?cayenneExp=seasonId={SEASON_ID}'
     teamsJson = FetchJson( requestUrl )
     filteredTeams = FilterTeams( teamsJson[ 'data' ] )
-    filteredTeams = GetTeamTriCodes( filteredTeams )
+    filteredTeams = AddTeamTriCodes( filteredTeams )
+    filteredTeams = AddTeamRoster( filteredTeams )
     return filteredTeams
-#TODO update to new api
-def StoreRoster( skaterIds, teamId, session ):
+
+#generate UPSERT query for roster
+def GenerateRosterQuery( skaterIds, teamId, session ):
     insertData = []
     today = GetDate()
     for skaterId in skaterIds:
@@ -101,58 +110,78 @@ def StoreRoster( skaterIds, teamId, session ):
         } )
     insert = GetInsert( session )
     
-    insertConflictQuery = insert( 
+    insertQuery = insert( 
         models.Roster 
     ).values( 
         insertData 
-    ).on_conflict_do_update(
+    )
+
+    insertConflictQuery = insertQuery.on_conflict_do_update(
         index_elements=[ 'skater_id' ],
         set_ = {
-            'team_id': teamId,
+            'team_id': insertQuery.excluded.team_id,#excluded not required, team ID doesn't change within scope
             'updated': today
         }
     )
     return insertConflictQuery
-#TODO: update to new api
-def StoreTeams( teams, session ):
+
+#Store team data, including tri code
+def GenerateTeamsQuery( teams, session ):
     insertData = []
     for team in teams:
         insertData.append( {
-            'id':team[ 'id' ],
-            'name':team[ 'name' ],
-            'abbreviation':team[ 'abbreviation' ]
+            "team_id" : team.team_id,
+            "losses" : team.losses,
+            "ot_losses" : team.otLosses,
+            "team_full_name" : team.teamFullName,
+            "ties" : team.ties,
+            "wins" : team.wins,
+            "wins_in_regulation" : team.winsInRegulation,
+            "tri_code" : team.triCode
         } )
+
     insert = GetInsert( session )
-    insertConflictQuery = insert( 
+    
+    insertQuery = insert( 
         models.Team 
     ).values( 
         insertData 
-    ).on_conflict_do_nothing(
-        index_elements=[ 'id' ]
+    )
+
+    insertConflictQuery = insertQuery.on_conflict_do_update(
+        index_elements=[ 'team_id' ],
+        set_ = {
+            "losses" : insertQuery.excluded.losses,
+            "ot_losses" : insertQuery.excluded.ot_losses,
+            "ties" : insertQuery.excluded.ties,
+            "wins" : insertQuery.excluded.wins,
+            "wins_in_regulation" : insertQuery.excluded.wins_in_regulation,
+        }
     )
 
     return insertConflictQuery
 
-#TODO: update to new api
+#Check if there's data from today
 def CheckIfDataExists(  ):
     Session = sessionmaker( models.engine )
     today = GetDateString()
     with Session() as session:
         exists = session.query( models.Roster ).filter_by( updated=today ).first() is not None
     return exists
-#TODO: update to new api
+
+#Store team and roster data, including triCode
 def StoreData( teamData ):
     Session = sessionmaker( models.engine )
     with Session() as session:
-        teamsInsert = StoreTeams( teamData, session )
+        teamsInsert = GenerateTeamsQuery( teamData, session )
         session.execute( teamsInsert )
-        # for team in teamData:
-        #     rosterInsert = StoreRoster( 
-        #         skaterIds = team[ 'roster' ], 
-        #         teamId = team[ 'id' ],
-        #         session = session
-        #     )
-        #     session.execute( rosterInsert )
+        for team in teamData:
+            rosterInsert = GenerateRosterQuery( 
+                skaterIds = team[ 'roster' ], 
+                teamId = team[ 'id' ],
+                session = session
+            )
+            session.execute( rosterInsert )
         session.commit()
 #TODO: update to new api
 def RetrieveData(  ):
