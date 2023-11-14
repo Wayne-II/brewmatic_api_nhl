@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String
+from sqlalchemy import Column, Integer, String, Date
 from .base import Base
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import Insert
@@ -15,7 +15,8 @@ class Team( Base ):
     ties = Column( Integer )
     wins = Column( Integer )
     wins_in_regulation = Column( Integer )
-    
+    tri_code = Column( String )
+    updated = Column( Date )
     #TODO: last updated field to keep track if teams was updated
     # will use roster for now
 
@@ -58,7 +59,6 @@ class Team( Base ):
     def winsInRegulation( self ):
         return self.wins_in_regulation
     
-team = Team()
-team.team_id = 1
 
-print
+
+#teams IDs: 1,17,6,52,28,5,14,4,9,10,7,19,12,53,20,8,15,26,23,21,18,24,54,2,55,25,30,16,3,29,13,22
