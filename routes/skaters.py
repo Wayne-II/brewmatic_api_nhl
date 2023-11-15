@@ -105,7 +105,7 @@ def GenerateSkaterQueryUrls( skaterIds ):
         if querySkaterIdsEnd >= skaterCount:
             querySkaterIdsEnd = skaterCount
         querySkaterIds = ','.join( [ str(id) for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ] )
-        query = '%s?start=%s&limit=%s&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (%s) and seasonId=%s and rosterStatus in ("Y", "I")' % ( SKATER_BASE_URL, querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
+        query = f'{SKATER_BASE_URL}?start={querySkaterIdsStart}&limit={queryLimitMultiplier}&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in ({querySkaterIds}) and seasonId={seasonId}'
 
         # t='https://api.nhle.com/stats/rest/en/skater/summary?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (8479982) and seasonId=20232024 and rosterStatus in ( "Y", "I" )' % (querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
 
@@ -113,12 +113,12 @@ def GenerateSkaterQueryUrls( skaterIds ):
     return queries
 
 # fetch the raw data and filter
-def FetchSkaters( teamIds ):
+def FetchSkaters( skaterIds ):
     skaters = []
     seasonString = str( seasonEndYear - 1 ) + str( seasonEndYear )
 
 
-    queries = GenerateSkaterQueryUrls( teamIds)
+    queries = GenerateSkaterQueryUrls( skaterIds )
     for requestUrl in queries:
         statsJson = FetchJson( requestUrl )
         #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
@@ -137,8 +137,8 @@ def CheckIfDataExists( skaterIds ):
             models.Skater.updated == today
         )
 
-        skaterIdsResults = session.scalars( skaterIdsQuery )
-        exists = session.query( models.Skater ).filter_by( updated=today ).first() is not None
+        skaterIdsResults = session.scalars( skaterIdsQuery ).all()
+        exists = len( skaterIdsResults ) > 0
     return exists
 
 def StoreSkatersQuery( skaters, session ):
@@ -155,19 +155,25 @@ def StoreSkatersQuery( skaters, session ):
             'team_abbrevs': skater[ 'teamAbbrevs' ]
         } )
 
+
+
+
+
     insert = GetInsert( session )
 
-    insertConflictQuery = insert( 
+    insertQuery = insert( 
         models.Skater 
     ).values( 
         insertData 
-    ).on_conflict_do_update(
+    )
+    
+    insertConflictQuery = insertQuery.on_conflict_do_update(
         index_elements=[ 'id' ],
         set_ = {
-            'goals': skater[ 'goals' ],
+            'goals': insertQuery.excluded.goals,
             'updated': today,
             #TODO: used for now as UI depends on it.  will fix UI
-            'team_abbrevs':skater[ 'teamAbbrevs' ]
+            'team_abbrevs':insertQuery.excluded.team_abbrevs
         }
     )
     
@@ -221,7 +227,6 @@ class Skaters( Resource ):
         #if not database data, fetch from NHL and store in DB otherwise DB
         if not CheckIfDataExists( skaterIds ):
             ret = FetchSkaters( skaterIds )
-            print( str( ret ) )
             StoreData( ret )
         else:
             ret = RetrieveData( skaterIds )
