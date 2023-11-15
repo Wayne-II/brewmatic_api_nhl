@@ -2,6 +2,8 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey, BLANK_SCHEMA
 from uuid import uuid4
 from .base import Base
 
+
+#TODO: automatic serialization like @JsonSerializable() / json_annotation in Dart
 class Schedule( Base ):
     __tablename__ = 'schedule'
     __table_args__ = {'extend_existing':True}

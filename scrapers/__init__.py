@@ -1,0 +1,1 @@
+from .schedule import FetchSchedule as schedule_scraper

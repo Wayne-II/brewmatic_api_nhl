@@ -1,3 +1,7 @@
+----- SCHEDULE -----
+
+sample requst url
+https://api-web.nhle.com/v1/schedule/2023-11-07
 SCHEDULE_BASE_URL = https://api-web.nhle.com/v1/schedule
 NHL Schedule API request sample
 ```json
