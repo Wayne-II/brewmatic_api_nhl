@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, DateTime
 from .base import Base
 from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.sql import Insert
@@ -12,7 +12,7 @@ class Injury( Base ):
     id = Column( Integer, primary_key=True )
     skater_id = Column( Integer, ForeignKey( 'skaters.id' ), unique=True )
     status = Column( String ) # (I)njured or (S)cratched
-    updated = Column( Date )
+    updated = Column( DateTime(timezone=True) )
     injury_type = Column( String )# upper body, Achillies, undisclosed, blood clot, etc.
     #TODO: last updated field to keep track if teams was updated
     # will use roster for now

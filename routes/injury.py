@@ -34,8 +34,10 @@ def GetSkaterIdByName( skaterName, session ):
         ret = skaterResults[ 0 ].id 
     return ret
 
-def StoreData( injuryData, session ):
-    today = GetDate()
+def StoreData( injuryDataSet, session ):
+    injuryData = injuryDataSet[0]
+    today = injuryDataSet[1]
+    #today = GetDate()
     injuryInsertData = []
     scratchInsertData = []
     insert = GetInsert( session )
@@ -160,7 +162,8 @@ def FetchInjury():
     htmlText = scraper.get(url).text
     htmlSoup = BeautifulSoup( htmlText, 'html.parser' )
     injuryJsonStringMatches = htmlSoup.find_all( 'script', { 'type': 'application/ld+json' } )
-
+    injuryDateTime = htmlSoup.find( 'div', { 'class' : 'nhl-c-article__date' } ).find( 'time' ).get( 'datetime' )
+    dt = datetime.datetime.strptime(injuryDateTime + '+0000', "%Y-%m-%dT%H:%M:%S%z")
     teamsLineupRegex = re.compile( r'(\*\*([a-zA-Z ]+) projected lineup\*\*)' )
     scInStRegex = re.compile( r'\*?\*\*(Scratched|Injured|Status report|Status Report):?' )
     # injuryRegex = re.compile( r'\*\*\*Injured:' )
@@ -212,7 +215,7 @@ def FetchInjury():
                                 )
                         elif lineDatum == 'Status report':
                             ret[ teamCommonName ][ 'status' ] = ProcessStatus( teamLineupData[ lineIdx + 1 ] )
-    return ret                   
+    return ( ret, dt )
 
 api = Namespace( "injury" )
 
@@ -224,8 +227,8 @@ class Injury( Resource ):
         Session = sessionmaker( models.engine )
         with Session() as session:
             if not CheckIfDataExists(  ):
-                raw = FetchInjury(  )
-                StoreData( raw, session )
+                rawSet = FetchInjury(  )
+                StoreData( rawSet, session )
             ret = RetrieveData( session )
         return ret
 
