@@ -5,6 +5,7 @@ import os
 import models
 from sqlalchemy.orm import sessionmaker
 
+
 # ~~~~~ SCHEDULE ~~~~~
 # https://api-web.nhle.com/v1/schedule/2023-11-07 # includes teams and odds
 
@@ -22,7 +23,6 @@ SCHEDULE_BASE_URL = os.getenv( 'SCHEDULE_BASE_URL' )
 
 def FilterGames( games ):
     filteredGames = []
-    print( games )
     for game in games:
         filteredGames.append( FilterGame( game ) )
     return filteredGames
@@ -44,7 +44,6 @@ def FetchSchedule():
     today = GetDateString()
     scheduleJson = FetchJson( f'{SCHEDULE_BASE_URL}/{today}' )
     filteredGames = []
-    print( scheduleJson )
     for todaysGames in scheduleJson['gameWeek']:
         if todaysGames['date'] == today:
             filteredGames = FilterGames( todaysGames[ 'games' ] )
@@ -123,6 +122,7 @@ api = Namespace( "schedule" )
 class Schedule( Resource ):
     def get( self ):
         ret = []
+        #TODO: database
         #if not database data, fetch from NHL and store in DB otherwise DB
         #if not CheckIfDataExists():
         ret = FetchSchedule()

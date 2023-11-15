@@ -29,3 +29,6 @@ class Injury( Base ):
             'injury_type':self.injury_type
         }
     
+    def __str__( self ):
+        return f'Injury(skater_id: {self.skater_id}, status: \'{self.status}\')'
+    

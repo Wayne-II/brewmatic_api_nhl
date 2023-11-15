@@ -134,12 +134,12 @@ def GenerateTeamsQuery( teams, session ):
     for team in teams:
         insertData.append( {
             "team_id" : team[ 'teamId' ],
-            "losses" : team[ 'losses' ],
-            "ot_losses" : team[ 'otLosses' ],
+            "losses" : team[ 'losses' ] or 0,
+            "ot_losses" : team[ 'otLosses' ] or 0,
             "team_full_name" : team[ 'teamFullName' ],
-            "ties" : team[ 'ties' ],
-            "wins" : team[ 'wins' ],
-            "wins_in_regulation" : team[ 'winsInRegulation' ],
+            "ties" : team[ 'ties' ] or 0,
+            "wins" : team[ 'wins' ] or 0,
+            "wins_in_regulation" : team[ 'winsInRegulation' ] or 0,
             "tri_code" : team[ 'triCode' ],
             "updated" : today
         } )
@@ -220,8 +220,6 @@ def RetrieveData( teamIds ):
         
         teamResults = session.scalars( teamQuery ).all()
         rosterResults = session.scalars( rosterQuery ).all()
-        print( 'team results ')
-        print( teamResults)
         for team in teamResults:
             roster = [ roster.skater_id for roster in rosterResults if roster.team_id == team.id ]
             ret.append( {
@@ -243,6 +241,7 @@ team_id_parser = api.parser()
 team_id_parser.add_argument('teamId', type=int, action='split')
 
 @api.route("/")
+@api.doc(params={"teamId": "Optional comma separated list of Team IDs"})
 class Teams( Resource ):
     def get( self ):
         ret = []
