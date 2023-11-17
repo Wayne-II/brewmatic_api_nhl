@@ -155,10 +155,6 @@ def StoreSkatersQuery( skaters, session ):
             'team_abbrevs': skater[ 'teamAbbrevs' ]
         } )
 
-
-
-
-
     insert = GetInsert( session )
 
     insertQuery = insert( 
