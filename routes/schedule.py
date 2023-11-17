@@ -31,7 +31,7 @@ def FilterGames( games ):
 
 def FilterGame( game ):
     gameKeys = [ 'homeTeam', 'awayTeam' ]
-    return { key: FilterTeam( game[ key ] ) for key in gameKeys } 
+    return { key: FilterTeam( game[ key ] ) for key in gameKeys }
 
 # filter a team so only the ID and name come back also flatten out object as
 # team is the only key that we keep
@@ -72,7 +72,7 @@ def GetTeamName( teamId, teamsData ):
     #exists, it all exists - terrible assumption but we'll got with it
     #for now
     return 'Team Name Not Found'
-#TODO: update to new api
+#TODO: update to new api/schema
 def RetrieveData():
     today = GetDate()
     Session = sessionmaker( models.engine )
@@ -102,31 +102,13 @@ def RetrieveData():
                 }
             )
     return data
-#TODO: update to new api
-def StoreData( scheduleData ):
-    today = GetDate()
-    Session = sessionmaker( models.engine )
-    with Session() as session:
-        for game in scheduleData:
-            #TODO update models to reflect new api
-            scheduledGame = models.Schedule( home_id = game[ 'teams' ][ 'home' ][ 'id' ],
-                away_id = game[ 'teams' ][ 'away' ][ 'id' ],
-                game_date = today 
-            )
-            session.add( scheduledGame )
-        session.commit()
 
 api = Namespace( "schedule" )
-
+#TODO: clean up NHL API fetching and database writing functions - once data scraper is schedule
 @api.route("/")
 class Schedule( Resource ):
     def get( self ):
         ret = []
-        #TODO: database
-        #if not database data, fetch from NHL and store in DB otherwise DB
-        #if not CheckIfDataExists():
         ret = FetchSchedule()
-            #StoreData( ret )
-       # else:
-            #ret = RetrieveData()
+        #TODO: reimplement
         return ret
