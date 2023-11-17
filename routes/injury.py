@@ -31,7 +31,7 @@ def GetSkaterIdByName( skaterName, session ):
     )
     skaterResults = session.scalars( skatersQuery ).all()
     if len( skaterResults ) > 0:
-        ret = skaterResults[ 0 ].id 
+        ret = skaterResults[ 0 ].id
     return ret
 
 def StoreData( injuryDataSet, session ):
@@ -40,7 +40,7 @@ def StoreData( injuryDataSet, session ):
     #today = GetDate()
     injuryInsertData = []
     scratchInsertData = []
-    insert = GetInsert( session )
+    
     for teamId in injuryData:
         for injury in injuryData[ teamId ][ 'injury' ]:
             injured = injury[ 'name' ].strip()
@@ -80,37 +80,47 @@ def StoreData( injuryDataSet, session ):
                 'updated': today,
                 'injury_type': 'scratch'
             } )
-    insertData = injuryInsertData + scratchInsertData
-    insertQuery = insert( 
-        models.Injury 
-    ).values( 
-        injuryInsertData 
-    )
     
-    conflictQuery = insertQuery.on_conflict_do_update(
-        index_elements=[ 'skater_id' ],
-        set_ = {
-            'status' : insertQuery.excluded.status,
-            'updated' : insertQuery.excluded.updated,
-            'injury_type':insertQuery.excluded.injury_type
-        }
-    )
+    insert = GetInsert( session )
+    if len( injuryInsertData ) > 0:
+        insertQuery = insert( 
+            models.Injury 
+        ).values( 
+            injuryInsertData 
+        )
+        
+        conflictQuery = insertQuery.on_conflict_do_update(
+            index_elements=[ 'skater_id' ],
+            set_ = {
+                'status' : insertQuery.excluded.status,
+                'updated' : insertQuery.excluded.updated,
+                'injury_type':insertQuery.excluded.injury_type
+            }
+        )
+        #print( f'injury query: {str(conflictQuery)}')
+        session.execute( conflictQuery )
+    #print( f'scratch data len: {len(scratchInsertData)}')
+    if len( scratchInsertData ) > 0:
+        scratchInsertQuery = insert( 
+            models.Injury 
+        ).values( 
+            scratchInsertData
+        )
+        scratchConflictQuery = scratchInsertQuery.on_conflict_do_update(
+            index_elements=[ 'skater_id' ],
+            set_ = {
+                'status' : scratchInsertQuery.excluded.status,
+                'updated' : scratchInsertQuery.excluded.updated,
+                'injury_type':scratchInsertQuery.excluded.injury_type
+            }
+        )
+        
+        print( f'scratch query: {str(scratchConflictQuery)}')
+        print( scratchInsertData )
+        
+        session.execute( scratchConflictQuery )
     
-    scratchInsertQuery = insert( 
-        models.Injury 
-    ).values( 
-        scratchInsertData
-    )
-    scratchConflictQuery = scratchInsertQuery.on_conflict_do_update(
-        index_elements=[ 'skater_id' ],
-        set_ = {
-            'status' : insertQuery.excluded.status,
-            'updated' : insertQuery.excluded.updated,
-            'injury_type':insertQuery.excluded.injury_type
-        }
-    )
-    session.execute( scratchConflictQuery )
-    session.execute( conflictQuery )
+    print( 'both executed ')
     session.commit()
 
 def RetrieveData( session ):
@@ -138,22 +148,51 @@ def RetrieveData( session ):
 
     return ret
 
-ScInNameRegex = re.compile( r'([a-zA-Z ]+),?' )
-injuryTypeRegex = re.compile( r'\(([a-zA-Z ]+)\)' )
-noneRegex = re.compile( r'\*\* None\*')
-def ProcessScInNames( data ):
-    return ScInNameRegex.findall( data)
+#compile regex at runtime
+teamRegex = re.compile( r'\*\*([A-Za-z\s]+) projected lineup\*\*', re.DOTALL | re.MULTILINE | re.IGNORECASE )
+injuredLineRegex = re.compile( r'\*\*\*Injured:?\s?\*\*')
+injuredRegex = re.compile( r'([a-zA-Z\s]+) \([a-zA-Z\s]+\)', re.DOTALL | re.IGNORECASE )
+injuriesRegex = re.compile( r'[a-zA-Z\s]+ \(([a-zA-Z\s]+)\),?', re.DOTALL | re.IGNORECASE )
+scratchedLineRegex = re.compile( r'\*\*\*Scratched:\*\*', re.IGNORECASE )
+scratchedRegex = re.compile( r'(?:\s|\s\*)([a-zA-Z\s]+),?', re.DOTALL | re.IGNORECASE )
 
-def ProcessScratched( data ):
-    return ProcessScInNames( data )
+def ProcessInjuryData( playerData, injuryData ):
+    player_statuses = []
+    Session = sessionmaker( models.engine )
+    with Session() as session:
+        for playerIdx, player in enumerate( playerData ):
+            player_name = player.strip()
+            player_statuses.append( {
+                'name': player_name,
+                'skater_id': GetSkaterIdByName( player_name, session ),
+                'status':'I' if injuryData[ playerIdx ] != 'scratched' else 'S',
+                'injury_type':injuryData[ playerIdx ].strip()
+            } )
+    return player_statuses
 
-def ProcessInjured( data ):
-    injuryTypeMatches = injuryTypeRegex.findall( data )
-    nameMatches = ProcessScInNames( injuryTypeRegex.sub( '', data ) )
-    return { 'names': nameMatches, 'injuries': injuryTypeMatches }
+def ExtractInjuryData( article_body ):
 
-def ProcessStatus( data ):
-    return data
+    article_lines = article_body.split( '\n' )
+
+    teamMatches = teamRegex.findall(article_body)
+    teamIdx = 0
+    currentTeam = None
+    players_by_team = { team: [] for team in teamMatches }
+    for article_line in article_lines:
+        if injuredLineRegex.match( article_line ):
+            injuredMatches = injuredRegex.findall( article_line )
+            injuriesMatches = injuriesRegex.findall( article_line )
+            players_by_team[ currentTeam ].extend( ProcessInjuryData( injuredMatches, injuriesMatches ) )
+        elif scratchedLineRegex.match( article_line ):
+            scratchedMatches = scratchedRegex.findall( article_line )
+            injuriesData = [ 'scratched' for scratch in scratchedMatches ]
+            players_by_team[ currentTeam ].extend( ProcessInjuryData( scratchedMatches, injuriesData ) )
+        elif teamRegex.match( article_line ):
+            currentTeam = teamMatches[ teamIdx ]
+            teamIdx += 1
+
+    return players_by_team
+
 
 
 def FetchInjury():
@@ -161,75 +200,39 @@ def FetchInjury():
     url = INJURY_BASE_URL
     htmlText = scraper.get(url).text
     htmlSoup = BeautifulSoup( htmlText, 'html.parser' )
+    #extract injury JSON embedded in HTML as script tag
     injuryJsonStringMatches = htmlSoup.find_all( 'script', { 'type': 'application/ld+json' } )
+    #extract date and time information - it's updated around 5 UTC either 5:45 opr 4:45 can't remember atm
     injuryDateTime = htmlSoup.find( 'div', { 'class' : 'nhl-c-article__date' } ).find( 'time' ).get( 'datetime' )
+    #TODO: extract database and fetching code into a separate project/script separate from Flask API
     dt = datetime.datetime.strptime(injuryDateTime + '+0000', "%Y-%m-%dT%H:%M:%S%z")
-    teamsLineupRegex = re.compile( r'(\*\*([a-zA-Z ]+) projected lineup\*\*)' )
-    scInStRegex = re.compile( r'\*?\*\*(Scratched|Injured|Status report|Status Report):?' )
-    # injuryRegex = re.compile( r'\*\*\*Injured:' )
-    # statusRegex = re.compile( r'\*\*Status report' )
-    #{ 
-    #   '<Common Name>':{ 
-    #       'scratch':[ '<player name>' ],
-    #       'injury':[
-    #           {
-    #               'name': '<player name'>,
-    #               'injury': '<eg upper body>                
-    #           }
-    #       ],
-    #       'suspend':[ '<player name>' ],
-    #       'status':''
-    #   }
-    #}
     ret = {}
-    #TODO: deconstruct into managable bits.  Each block of for could probably be a function
     #TODO process status report to process suspensions.  THis will require some AI to determine
     #if there's any raw english that suggests any suspensions
     #process raw data
     for match in injuryJsonStringMatches:
         matchJson = json.loads( match.contents[0] )
         #TODO: process injury article
+        
         if matchJson[ '@type' ] == 'NewsArticle' and matchJson[ 'headline' ] == 'Projected lineups, starting goalies for today':
-            articleSplit = matchJson[ 'articleBody' ].split( "\\-\\-\\-" )
-            injuriesDataRaw = articleSplit[ 1 ]
-            lineupDataRaw = teamsLineupRegex.split( injuriesDataRaw )
-            #process lineup section of article
-            #TODO process injuries and scratched
-            for rawIdx, rawDatum in enumerate( lineupDataRaw ):
-                if teamsLineupRegex.fullmatch( rawDatum ):
-                    teamCommonName = lineupDataRaw[ rawIdx + 1 ]
-                    teamLineupData = scInStRegex.split( lineupDataRaw[ rawIdx + 2 ] )
-                    ret[ teamCommonName ] = {'scratch':[], 'injury':[], 'suspend':[], 'status':''}
-                    #process team data
-                    for lineIdx, lineDatum in enumerate( teamLineupData ):
-                        if lineDatum == 'Scratched':
-                            scratches = ProcessScratched( teamLineupData[ lineIdx + 1 ] )
-                            for scratched in scratches:
-                                if scratched.strip() != '':
-                                    ret[ teamCommonName ][ 'scratch' ].append( scratched )
-                        elif lineDatum == 'Injured' and not noneRegex.match( teamLineupData[ lineIdx + 1 ] ):
-                            injuries = ProcessInjured( teamLineupData[ lineIdx + 1 ] )
-                            for injuryIdx, injured in enumerate( injuries[ 'names' ] ):
-                                ret[ teamCommonName ][ 'injury' ].append(
-                                    { 'name' : injured, 'injury': injuries[ 'injuries' ][ injuryIdx ] }
-                                )
-                        elif lineDatum == 'Status report':
-                            ret[ teamCommonName ][ 'status' ] = ProcessStatus( teamLineupData[ lineIdx + 1 ] )
-    return ( ret, dt )
+            ret = ExtractInjuryData( matchJson[ 'articleBody' ] )
+    return ret
 
 api = Namespace( "injury" )
 
 @api.route("/")
 class Injury( Resource ):
     def get( self ):
-        ret = {}
+        ret = []
         #if not database data, fetch from NHL and store in DB otherwise DB
         Session = sessionmaker( models.engine )
         with Session() as session:
             if not CheckIfDataExists(  ):
-                rawSet = FetchInjury(  )
-                StoreData( rawSet, session )
-            ret = RetrieveData( session )
+                injuries_by_team = FetchInjury(  )
+                # StoreData( rawSet, session )
+            # ret = RetrieveData( session )
+        for team in injuries_by_team:
+            ret.extend( injuries_by_team[ team ] )
         return ret
 
 # ~~~~~ INJURY ~~~~~
