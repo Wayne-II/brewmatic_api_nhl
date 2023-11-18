@@ -4,7 +4,15 @@
 import scrapers
 import writers
 
-scheduleData = scrapers.schedule_scraper()
-writers.schedule_writer( scheduleData )
 
-print( scheduleData )
+##################### SCHEDULE
+doSchedule = False
+if doSchedule:
+    scheduleData = scrapers.schedule_scraper()
+    writers.schedule_writer( scheduleData )
+
+##################### INJURY
+#TODO: merge NHL injury report data as it becomes available to the bell media data 
+doInjury = True
+if doInjury:
+    injuryData = scrapers.injury_scraper()
