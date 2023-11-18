@@ -11,6 +11,7 @@ class Injury( Base ):
     __table_args__ = {'extend_existing':True}
     id = Column( Integer, primary_key=True )
     skater_id = Column( Integer, ForeignKey( 'skaters.id' ), unique=True )
+    #TODO: status can be (D)day-to-day, (S)scratched, (I)injured, or (IR)injured reserve for now it's just whatever the source information provides
     status = Column( String ) # (I)njured or (S)cratched
     updated = Column( DateTime(timezone=True) )
     injury_type = Column( String )# upper body, Achillies, undisclosed, blood clot, etc.
