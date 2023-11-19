@@ -6,7 +6,7 @@ import writers
 
 
 ##################### SCHEDULE
-doSchedule = False
+doSchedule = True
 if doSchedule:
     scheduleData = scrapers.schedule_scraper()
     writers.schedule_writer( scheduleData )
@@ -16,3 +16,4 @@ if doSchedule:
 doInjury = True
 if doInjury:
     injuryData = scrapers.injury_scraper()
+    writers.injury_writer( injuryData )
