@@ -42,6 +42,3 @@ def FilterTeam( team ):
 #API would only store the raw NHL results in a database and not make NHL API
 #requests on every request.  However the userbase is not large enough to
 #warrant this dev time.
-if __name__ == '__main__':
-    nhlData = FetchSchedule()
-    print( nhlData )
