@@ -18,7 +18,6 @@ def FetchSkaters():
         statsJson = FetchJson( requestUrl )
         #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
         skaters = skaters + statsJson[ 'data' ]
-    print( skaters )
     return skaters
 
 def FetchSkaterIds():

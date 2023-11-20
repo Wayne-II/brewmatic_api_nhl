@@ -5,7 +5,6 @@ from sqlalchemy.orm import sessionmaker
 
 def StoreData( scheduleData ):
     today = GetDate()
-    print( scheduleData )
     Session = sessionmaker( models.engine )
     with Session() as session:
         scheduledGames = []
@@ -22,7 +21,9 @@ def StoreData( scheduleData ):
             scheduledGames
         )
 
-        scheduleInsertConflict = scheduleInsert.on_conflict_do_nothing()
+        scheduleInsertConflict = scheduleInsert.on_conflict_do_nothing(
+            index_elements=['home_id','away_id']
+        )
 
         session.execute( scheduleInsertConflict )
         session.commit()

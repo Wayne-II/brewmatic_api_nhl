@@ -13,7 +13,6 @@ def FetchTeams():
     filteredTeams = FilterTeams( teamsJson[ 'data' ] )
     filteredTeams = AddTeamTriCodes( filteredTeams )
     filteredTeams = AddTeamRoster( filteredTeams )
-    print( filteredTeams )
     return filteredTeams
 
 #filter the raw teams data so that only required information is required
