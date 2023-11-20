@@ -15,7 +15,6 @@ if not database_exists( engine.url ):
     create_database( engine.url )
     print( 'Database created')
 Base.metadata.create_all( engine )
-Base.metadata
 print( 'Tables created or updated' )
 
 

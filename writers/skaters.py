@@ -42,4 +42,3 @@ def StoreSkatersQuery( skaters, session ):
     )
     
     return insertConflictQuery
-
