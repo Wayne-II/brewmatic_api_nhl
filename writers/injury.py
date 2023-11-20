@@ -24,7 +24,7 @@ def StoreData( injuryData ):
         )
 
         injuryInsertConflict = injuryInsert.on_conflict_do_update(
-            index_elements=( [ 'skater_id' ] ),
+            index_elements=[ 'skater_id' ],
             set_= {
                 'status': injuryInsert.excluded.status,
                 'updated': injuryInsert.excluded.updated,
