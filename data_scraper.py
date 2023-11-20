@@ -6,7 +6,7 @@ import writers
 
 
 ##################### SCHEDULE
-doSchedule = False
+doSchedule = True
 if doSchedule:
     print( 'Fetching schedule.' )
     scheduleData = scrapers.schedule_scraper()
@@ -18,7 +18,7 @@ if doSchedule:
 # there should be.  bell media/TSN data seems to be more accurate - NHL has 
 # scratches and some players that are not on the Bell/TSN list, but the same
 # can be said regarding vice-versa
-doInjury = False
+doInjury = True
 if doInjury:
     print( 'Fetching injuries.' )
     injuryData = scrapers.injury_scraper()
@@ -26,7 +26,7 @@ if doInjury:
     writers.injury_writer( injuryData )
 
 ##################### TEAMS
-doTeams = False
+doTeams = True
 if doTeams:
     print( 'Fetching teams.' )
     teamsData = scrapers.teams_scraper()
@@ -38,3 +38,5 @@ doSkaters = True
 if doSkaters:
     print( 'Fetching skaters.' )
     skatersData = scrapers.skaters_scraper()
+    print( 'Writing skaters.' )
+    writers.skaters_writer( skatersData )
