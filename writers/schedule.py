@@ -22,7 +22,7 @@ def StoreData( scheduleData ):
         )
 
         scheduleInsertConflict = scheduleInsert.on_conflict_do_nothing(
-            index_elements=['home_id','away_id']
+            index_elements=['home_id', 'away_id', 'game_date']
         )
 
         session.execute( scheduleInsertConflict )
