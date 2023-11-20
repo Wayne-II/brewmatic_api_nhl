@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Date, ForeignKey, BLANK_SCHEMA
+from sqlalchemy import Column, Integer, String, Date, ForeignKey, BLANK_SCHEMA, UniqueConstraint
 from uuid import uuid4
 from .base import Base
 
@@ -11,3 +11,4 @@ class Schedule( Base ):
     home_id = Column( Integer, ForeignKey( 'teams.team_id' ) )
     away_id = Column( Integer, ForeignKey( 'teams.team_id' ) )
     game_date = Column( Date )
+    UniqueConstraint( home_id, away_id, game_date, name='TODO_PK' )
