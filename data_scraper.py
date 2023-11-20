@@ -14,7 +14,10 @@ if doSchedule:
     writers.schedule_writer( scheduleData )
 
 ##################### INJURY
-#TODO: merge NHL injury report data as it becomes available to the bell media data 
+#TODO: determin which INJURY report to take if there are duplicates - which 
+# there should be.  bell media/TSN data seems to be more accurate - NHL has 
+# scratches and some players that are not on the Bell/TSN list, but the same
+# can be said regarding vice-versa
 doInjury = False
 if doInjury:
     print( 'Fetching injuries.' )
@@ -23,9 +26,15 @@ if doInjury:
     writers.injury_writer( injuryData )
 
 ##################### TEAMS
-doTeams = True
+doTeams = False
 if doTeams:
     print( 'Fetching teams.' )
     teamsData = scrapers.teams_scraper()
     print( 'Writing teams.' )
     writers.teams_writer( teamsData )
+
+##################### SKATERS
+doSkaters = True
+if doSkaters:
+    print( 'Fetching skaters.' )
+    skatersData = scrapers.skaters_scraper()
