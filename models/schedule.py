@@ -2,8 +2,8 @@ from sqlalchemy import Column, Integer, String, Date, ForeignKey, BLANK_SCHEMA
 from uuid import uuid4
 from .base import Base
 
-
-#TODO: automatic serialization like @JsonSerializable() / json_annotation in Dart
+#TODO: make home_id, away_id, and game_date the primary key so duplicates 
+# aren't entered into the API database
 class Schedule( Base ):
     __tablename__ = 'schedule'
     __table_args__ = {'extend_existing':True}
@@ -11,6 +11,3 @@ class Schedule( Base ):
     home_id = Column( Integer, ForeignKey( 'teams.team_id' ) )
     away_id = Column( Integer, ForeignKey( 'teams.team_id' ) )
     game_date = Column( Date )
-
-#TODO: new schedule API https://api-web.nhle.com/v1/scoreboard/
-#this endpoint provides team records
