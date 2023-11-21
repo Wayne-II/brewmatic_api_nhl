@@ -24,6 +24,8 @@ def StoreData( scheduleData ):
         scheduleInsertConflict = scheduleInsert.on_conflict_do_nothing(
             index_elements=['home_id', 'away_id', 'game_date']
         )
+        print( 'query values' )
+        print( scheduleInsertConflict._values )
 
         session.execute( scheduleInsertConflict )
         session.commit()
