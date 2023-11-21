@@ -38,15 +38,3 @@ class Skaters( Resource ):
         skaterIds = args[ 'id' ]
         ret = RetrieveData( skaterIds )
         return ret
-
-##################################
-# NHL API INFO FOR THIS ENDPOINT #
-##################################
-# Filtered output example
-##################################
-
-
-##################################
-# RAW NHL API OUTPUT             #
-
-##################################
