@@ -41,11 +41,11 @@ def SuggestSkater( suggestFromName ):
     #   and could be leveraged to DoS from a single system.
     skaters = GetTodaysSkaters()
     ret = {}
-    #this is not perfect as someone with a longer name match have a higher
-    #percentage match.  This will have to be something that is checked.
-    #adding a last name match in the results will help this.  The most
-    #common mistmatches are diacritics(umlaut), short names(mitch vs
-    #mitchell), and punctuated names(AJ. vs A.J.)
+    #TODO: this is not perfect as someone with a longer name match have a higher
+    #percentage match.  This will have to be something that is checked.  adding 
+    #a last name match in the results will help this.  The most common 
+    #mistmatches are diacritics(umlaut), short names(mitch vs mitchell), and 
+    #punctuated names(AJ. vs A.J.)
     for misspelledName in suggestFromName:
         ret[ misspelledName ] = get_close_matches( misspelledName, skaters, 1)
     return ret
