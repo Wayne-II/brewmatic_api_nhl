@@ -1,24 +1,28 @@
 from flask_restx import Namespace, Resource, fields
 from difflib import get_close_matches
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy import and_, or_
 import models
 from common import GetDate
 
 def GetTodaysSkaters():
-    #TODO: get list of skaters from list of skaters going to play today
-    #This is a list of skaters paying today october 25th 2023 ( WSH v NJD)
-    #testing Google ML Kit detecting Nicklas Backsrtom as Nicklas Backstronm.
-    #Some arbitrary 'N' got added between 'O' and 'M'
     Session = sessionmaker( models.engine )
     ret = []
     today = GetDate()
 
     with Session() as session:
-        #get today's roster
+        #get skaters from the roster where the team they are currently on is a
+        #team that is playing today
         rosterQuery = session.query(
             models.Roster
+        ).join(
+            models.Team,
+            and_( models.Roster.team_id == models.Team.team_id )
+        ).join(
+            models.Schedule,
+            or_( models.Schedule.away_id == models.Team.team_id, models.Schedule.home_id == models.Team.team_id )
         ).filter(
-            models.Roster.updated == today
+            models.Schedule.game_date == today
         )
         rosterResults = session.scalars( rosterQuery ).all()
         skaterIds = [ roster.skater_id for roster in rosterResults ]
