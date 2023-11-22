@@ -104,11 +104,11 @@ def RetrieveData():
     return data
 
 api = Namespace( "schedule" )
-#TODO: clean up NHL API fetching and database writing functions - once data scraper is schedule
+#TODO: clean up NHL API fetching and database writing functions - data scraper is complete
 @api.route("/")
 class Schedule( Resource ):
     def get( self ):
         ret = []
         ret = FetchSchedule()
-        #TODO: reimplement
+        #TODO: reimplement Retrieve 
         return ret
