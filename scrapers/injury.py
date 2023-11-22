@@ -1,7 +1,7 @@
 from dotenv import load_dotenv
 load_dotenv('.env')
 
-from common import FetchJson
+from common import FetchJson, GetDateString
 import os
 import models
 from sqlalchemy.orm import sessionmaker
@@ -61,11 +61,12 @@ def FilterPlayer( playerJson ):
         }
 
 def FilterInjuryData( injuryData ):
+    today = GetDateString()
     injuryKeys = [ 'date', 'status' ]
     filteredInjury = { k:injuryData[k] for k in injuryKeys }
     filteredInjury.update( 
         injury_type=injuryData[ 'description' ],
-        updated=datetime.datetime.strptime(injuryData[ 'date' ] + 'T00:00:00+0000', "%Y-%m-%dT%H:%M:%S%z")
+        updated=datetime.datetime.strptime( today + 'T00:00:00+0000', "%Y-%m-%dT%H:%M:%S%z")
     )
     return filteredInjury
 
