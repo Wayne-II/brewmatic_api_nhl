@@ -97,9 +97,7 @@ def StoreData( injuryDataSet, session ):
                 'injury_type':insertQuery.excluded.injury_type
             }
         )
-        #print( f'injury query: {str(conflictQuery)}')
         session.execute( conflictQuery )
-    #print( f'scratch data len: {len(scratchInsertData)}')
     if len( scratchInsertData ) > 0:
         scratchInsertQuery = insert( 
             models.Injury 
@@ -114,13 +112,7 @@ def StoreData( injuryDataSet, session ):
                 'injury_type':scratchInsertQuery.excluded.injury_type
             }
         )
-        
-        print( f'scratch query: {str(scratchConflictQuery)}')
-        print( scratchInsertData )
-        
         session.execute( scratchConflictQuery )
-    
-    print( 'both executed ')
     session.commit()
 
 def RetrieveData( session ):

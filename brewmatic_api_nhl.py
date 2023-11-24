@@ -58,9 +58,6 @@
 #&season=20232024
 #&date=YYYY-MM-DD
 
-
-
-
 from dotenv import load_dotenv
 load_dotenv('.env')
 
@@ -70,5 +67,7 @@ from routes import api
 app = Flask(__name__)
 api.init_app( app )
 
-app.run( host="0.0.0.0" )
+
+if __name__ == '__main__':
+    app.run( host="0.0.0.0" )
 

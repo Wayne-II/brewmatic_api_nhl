@@ -78,7 +78,8 @@ def ProcessPlayerInjury( playerJson ):
 ################################################################################
 ######################## FUNCTIONS TO EXTRACT NHL DATA #########################
 ################################################################################
-import cloudscraper
+# import cloudscraper # not supported by HelioHost
+import requests
 from bs4 import BeautifulSoup
 import datetime
 import json
@@ -86,7 +87,7 @@ import re
 
 INJURY_BASE_URL = os.getenv( 'INJURY_BASE_URL' )
 #compile regex at runtime
-teamRegex = re.compile( r'\*\*([A-Za-z\s]+) projected lineup\*\*', re.DOTALL | re.MULTILINE | re.IGNORECASE )
+teamRegex = re.compile( r'\*\*([A-Za-z\s]+) projected (lineup|lines)\*\*', re.DOTALL | re.MULTILINE | re.IGNORECASE )
 injuredLineRegex = re.compile( r'\*\*\*Injured:?\s?\*\*')
 injuredRegex = re.compile( r'([a-zA-Z\s]+) \([a-zA-Z\s]+\)', re.DOTALL | re.IGNORECASE )
 injuriesRegex = re.compile( r'[a-zA-Z\s]+ \(([a-zA-Z\s]+)\),?', re.DOTALL | re.IGNORECASE )
@@ -94,9 +95,10 @@ scratchedLineRegex = re.compile( r'\*\*\*Scratched:\*\*', re.IGNORECASE )
 scratchedRegex = re.compile( r'(?:\s|\s\*)([a-zA-Z\s]+),?', re.DOTALL | re.IGNORECASE )
 
 def FetchNHLData():
-    scraper = cloudscraper.create_scraper(browser='chrome')
+    # scraper = cloudscraper.create_scraper(browser='chrome')
     url = INJURY_BASE_URL
-    htmlText = scraper.get(url).text
+    r = requests.get(url)
+    htmlText = r.text
     htmlSoup = BeautifulSoup( htmlText, 'html.parser' )
     #extract injury JSON embedded in HTML as script tag
     injuryJsonStringMatches = htmlSoup.find_all( 'script', { 'type': 'application/ld+json' } )

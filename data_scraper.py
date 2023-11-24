@@ -1,3 +1,5 @@
+#!/usr/bin/python3.10
+#The above SHABANG is for HelioHost
 #TODO: extract all 3rd party API requests from API
 #TODO: extract all database storage functionality from API
 import sys, getopt
@@ -86,8 +88,14 @@ def main( argv ):
             print( 'There is an issue with skaters.  Skipping.')
             handleError( e )
 
+#to run as command line
 if __name__ == '__main__':
     try:
         main( sys.argv)
     except Exception as e:
         handleError( e )
+else:
+    main( [] )
+
+
+

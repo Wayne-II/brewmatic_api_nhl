@@ -1,5 +1,7 @@
+#!/usr/bin/python3.10
 from sqlalchemy import create_engine
-from sqlalchemy_utils import database_exists, create_database
+#Not supported on HelioHost
+#from sqlalchemy_utils import database_exists, create_database
 import os
 from models.schedule import Schedule
 from models.teams import Team
@@ -8,12 +10,12 @@ from models.roster import Roster
 from models.base import Base
 from models.engine import engine
 from models.injury import Injury
-
+print( "Content-type: text/html\n\n")
 #FOR USE WITH DEVELOPMENT ONLY!!!
 #USE deploy.py FOR PRODUCTION DEPLOYMENT
-if not database_exists( engine.url ):
-    create_database( engine.url )
-    print( 'Database created')
+# if not database_exists( engine.url ):
+#     create_database( engine.url )
+#     print( 'Database created')
 Base.metadata.create_all( engine )
 print( 'Tables created or updated' )
 

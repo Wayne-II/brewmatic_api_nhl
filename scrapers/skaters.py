@@ -55,9 +55,11 @@ def GenerateSkaterQueryUrls( skaterIds ):
         querySkaterIdsEnd = ( i + 1 ) * queryLimitMultiplier
         if querySkaterIdsEnd >= skaterCount:
             querySkaterIdsEnd = skaterCount
+        
+        test = [ id for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ]
         querySkaterIds = ','.join( [ str(id) for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ] )
-        query = f'{SKATER_BASE_URL}?start={querySkaterIdsStart}&limit={queryLimitMultiplier}&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in ({querySkaterIds}) and seasonId={seasonId}'
-
+        
+        query = f'{SKATER_BASE_URL}?start=0&limit={queryLimitMultiplier}&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in ({querySkaterIds}) and seasonId={seasonId}'
         # t='https://api.nhle.com/stats/rest/en/skater/summary?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (8479982) and seasonId=20232024 and rosterStatus in ( "Y", "I" )' % (querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
 
         queries.append( query )
