@@ -10,7 +10,9 @@ from common import FetchJson, GetDate, GetDateString, GetInsert
 from os import getenv
 
 import re
-import cloudscraper
+#The following import is not supported by HelioHost
+#import cloudscraper 
+import requests
 from bs4 import BeautifulSoup
 import json
 
@@ -188,9 +190,10 @@ def ExtractInjuryData( article_body ):
 
 
 def FetchInjury():
-    scraper = cloudscraper.create_scraper(browser='chrome')
+    # scraper = cloudscraper.create_scraper(browser='chrome')
     url = INJURY_BASE_URL
-    htmlText = scraper.get(url).text
+    r = requests.get(url)
+    htmlText = r.text
     htmlSoup = BeautifulSoup( htmlText, 'html.parser' )
     #extract injury JSON embedded in HTML as script tag
     injuryJsonStringMatches = htmlSoup.find_all( 'script', { 'type': 'application/ld+json' } )
