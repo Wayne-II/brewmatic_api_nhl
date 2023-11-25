@@ -1,5 +1,6 @@
 #!/usr/bin/python3.10
 #The above SHABANG is for HelioHost
+print( "Content-type: text/html\n\n" )
 #TODO: extract all 3rd party API requests from API
 #TODO: extract all database storage functionality from API
 import sys, getopt
@@ -19,9 +20,9 @@ def handleError( error ):
         print( f'The was an error in the error handler. {str(e)}')
 
 def main( argv ):
-    doSchedule = True
-    doInjury = True
-    doTeams = True
+    doSchedule = False
+    doInjury = False
+    doTeams = False
     doSkaters = True
     opts, args = getopt.getopt(argv[1:],"hs:i:t:p:",["schedule=","injuries=","teams=","players="])
     for opt, arg in opts:
@@ -40,6 +41,18 @@ def main( argv ):
         elif opt in ("-p", "--players"):
             doSkaters = True if arg.upper() == 'Y' else False
         
+    #Due to skater ID being a foreign key for teams and roster, skaters should be first.
+    ##################### SKATERS
+    if doSkaters:
+        try:
+            print( 'Fetching skaters.' )
+            skatersData = scrapers.skaters_scraper()
+            print( 'Writing skaters.' )
+            writers.skaters_writer( skatersData )
+        except Exception as e:
+            print( 'There is an issue with skaters.  Skipping.')
+            handleError( e )
+
     ##################### SCHEDULE
     if doSchedule:
         try:
@@ -77,17 +90,6 @@ def main( argv ):
             print( 'There is an issue with teams.  Skipping.')
             handleError( e )
 
-    ##################### SKATERS
-    if doSkaters:
-        try:
-            print( 'Fetching skaters.' )
-            skatersData = scrapers.skaters_scraper()
-            print( 'Writing skaters.' )
-            writers.skaters_writer( skatersData )
-        except Exception as e:
-            print( 'There is an issue with skaters.  Skipping.')
-            handleError( e )
-
 #to run as command line
 if __name__ == '__main__':
     try:
@@ -96,6 +98,3 @@ if __name__ == '__main__':
         handleError( e )
 else:
     main( [] )
-
-
-

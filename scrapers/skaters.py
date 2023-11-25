@@ -11,55 +11,33 @@ SKATER_BASE_URL = getenv( 'SKATER_BASE_URL' )
 
 # fetch the raw data and filter
 def FetchSkaters():
-    skaterIds = FetchSkaterIds()
+    #skaterIds = FetchSkaterIds()
     skaters = []
-    queries = GenerateSkaterQueryUrls( skaterIds )
-    for requestUrl in queries:
-        statsJson = FetchJson( requestUrl )
-        #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
-        skaters = skaters + statsJson[ 'data' ]
+    seasonId = buildSeasonId()
+    #TODO: skip first 100 and process this data
+    query = f'{SKATER_BASE_URL}?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and seasonId={seasonId}'
+    statsJson = FetchJson( query )
+    skaters = skaters + statsJson[ 'data' ]
+    skaterCount = int( statsJson[ 'total' ]  )
+    if skaterCount > 100:
+        queries = GenerateSkaterQueryUrls( skaterCount )
+        print( queries )
+        for requestUrl in queries:
+            statsJson = FetchJson( requestUrl )
+            #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
+            skaters = skaters + statsJson[ 'data' ]
     return skaters
 
-def FetchSkaterIds():
-    Session = sessionmaker( models.engine )
-    skaterIds = []
-    with Session() as session:
-        skaterIdsQuery = select(
-            models.Skater.id
-        ).join(
-            models.Roster,
-            and_( models.Skater.id == models.Roster.skater_id )
-        ).join(
-            models.Team,
-            and_( models.Roster.team_id == models.Team.team_id )
-        ).join(
-            models.Schedule,
-            or_( models.Schedule.away_id == models.Team.team_id, models.Schedule.home_id == models.Team.team_id )
-        ).filter(
-            models.Schedule.game_date == GetDateString()
-        )
 
-        skaterIdsResults = session.execute( skaterIdsQuery )
-        skaterIds = skaterIdsResults.scalars().all()
-    return skaterIds
-
-def GenerateSkaterQueryUrls( skaterIds ):
+def GenerateSkaterQueryUrls( skaterCount ):
     queryLimitMultiplier = 100
-    skaterCount = len(skaterIds )
-    requestCount = buildRequestCount( skaterCount, queryLimitMultiplier )
     queries = []#TODO: queries = buildQueries()
     seasonId = buildSeasonId()
 
-    for i in range( requestCount ):#337 skaters would be range(4) 0, 1, 2, 3 for 0-100, 101-200, 201-300, 301-337
-        querySkaterIdsStart = i * queryLimitMultiplier
-        querySkaterIdsEnd = ( i + 1 ) * queryLimitMultiplier
-        if querySkaterIdsEnd >= skaterCount:
-            querySkaterIdsEnd = skaterCount
+    #skip the first 100 as the data has already been fetched in order to get skaterCount
+    for i in range( 100, skaterCount, queryLimitMultiplier ):#337 skaters would be range(4) 0, 1, 2, 3 for 0-100, 101-200, 201-300, 301-337
         
-        test = [ id for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ]
-        querySkaterIds = ','.join( [ str(id) for id in skaterIds[ querySkaterIdsStart : querySkaterIdsEnd ] ] )
-        
-        query = f'{SKATER_BASE_URL}?start=0&limit={queryLimitMultiplier}&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in ({querySkaterIds}) and seasonId={seasonId}'
+        query = f'{SKATER_BASE_URL}?start={i}&limit={queryLimitMultiplier}&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and seasonId={seasonId}'
         # t='https://api.nhle.com/stats/rest/en/skater/summary?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and playerId in (8479982) and seasonId=20232024 and rosterStatus in ( "Y", "I" )' % (querySkaterIdsStart, queryLimitMultiplier, querySkaterIds , seasonId )
 
         queries.append( query )
