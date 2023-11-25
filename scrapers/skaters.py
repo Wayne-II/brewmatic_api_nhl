@@ -14,14 +14,12 @@ def FetchSkaters():
     #skaterIds = FetchSkaterIds()
     skaters = []
     seasonId = buildSeasonId()
-    #TODO: skip first 100 and process this data
     query = f'{SKATER_BASE_URL}?start=0&limit=100&cayenneExp=gamesPlayed>=0 and gameTypeId>=2 and seasonId={seasonId}'
     statsJson = FetchJson( query )
     skaters = skaters + statsJson[ 'data' ]
     skaterCount = int( statsJson[ 'total' ]  )
     if skaterCount > 100:
         queries = GenerateSkaterQueryUrls( skaterCount )
-        print( queries )
         for requestUrl in queries:
             statsJson = FetchJson( requestUrl )
             #TODO: it appears some players do not have stats yet - seems to be a rookie thing, maybe goalies
