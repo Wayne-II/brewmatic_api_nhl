@@ -15,6 +15,9 @@ def StoreSkatersQuery( skaters, session ):
 
     skaterIds = []
     for skater in skaters:
+        #make sure 3rd party API doesn't produce duplicates for the same player
+        #as the result would be a postgres integrity check with the on conflict
+        #clause resulting in a failed insert.
         if skater[ 'playerId' ] not in skaterIds:
             insertData.append( {
                 'id':skater[ 'playerId' ],
@@ -25,7 +28,6 @@ def StoreSkatersQuery( skaters, session ):
                 'team_abbrevs': skater[ 'teamAbbrevs' ]
             } )
             skaterIds.append( skater[ 'playerId' ] )
-
     insert = GetInsert( session )
 
     insertQuery = insert( 
