@@ -13,15 +13,18 @@ def StoreSkatersQuery( skaters, session ):
     insertData = []
     today = GetDate()
 
+    skaterIds = []
     for skater in skaters:
-        insertData.append( {
-            'id':skater[ 'playerId' ],
-            'skater_full_name':skater[ 'skaterFullName' ],
-            'goals':skater[ 'goals' ],
-            'last_name': skater[ 'lastName' ],
-            'updated': today,
-            'team_abbrevs': skater[ 'teamAbbrevs' ]
-        } )
+        if skater[ 'playerId' ] not in skaterIds:
+            insertData.append( {
+                'id':skater[ 'playerId' ],
+                'skater_full_name':skater[ 'skaterFullName' ],
+                'goals':skater[ 'goals' ],
+                'last_name': skater[ 'lastName' ],
+                'updated': today,
+                'team_abbrevs': skater[ 'teamAbbrevs' ]
+            } )
+            skaterIds.append( skater[ 'playerId' ] )
 
     insert = GetInsert( session )
 
