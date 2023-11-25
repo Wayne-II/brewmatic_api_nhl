@@ -1,5 +1,7 @@
 from common import FetchJson
 from os import getenv
+import models
+from sqlalchemy.orm import sessionmaker
 
 TEAMS_BASE_URL = getenv( 'TEAMS_BASE_URL' )
 TRICODE_BASE_URL = getenv( 'TRICODE_BASE_URL' )
@@ -58,9 +60,20 @@ def AddTeamRoster( filteredTeams ):
         ret.append( team )
     return ret
 
-def FilterRoster( roster ):  
+def FilterRoster( roster ):
     filteredRoster = []
-    mergedRoster = roster[ 'forwards' ] + roster[ 'defensemen' ] + roster[ 'goalies' ] 
+    mergedRoster = roster[ 'forwards' ] + roster[ 'defensemen' ] + roster[ 'goalies' ]
+    skaterIds = GetSkaterIds()
     for skater in mergedRoster:
-        filteredRoster.append( skater[ 'id' ] )
-    return filteredRoster 
+        skaterId = skater[ 'id' ]
+        if skaterId in skaterIds:
+            filteredRoster.append( skaterId )
+    return filteredRoster
+
+def GetSkaterIds():
+    Session = sessionmaker( models.engine )
+    skaterIds = []
+    with Session() as session:
+        query = session.query( models.Skater.id )
+        skaterIds = session.scalars( query ).all()
+    return skaterIds
