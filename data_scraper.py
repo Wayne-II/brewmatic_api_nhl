@@ -20,9 +20,9 @@ def handleError( error ):
         print( f'The was an error in the error handler. {str(e)}')
 
 def main( argv ):
-    doSchedule = False
-    doInjury = False
-    doTeams = False
+    doSchedule = True
+    doInjury = True
+    doTeams = True
     doSkaters = True
     opts, args = getopt.getopt(argv[1:],"hs:i:t:p:",["schedule=","injuries=","teams=","players="])
     for opt, arg in opts:
