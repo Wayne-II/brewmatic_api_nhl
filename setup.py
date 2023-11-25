@@ -21,8 +21,6 @@ print( 'Tables created or updated' )
 
 
 
-
-
 #TODO design database schema
 #TODO create database initialization script/API setup script.  Setup
 #   script will set up schema, API keys, as well as fetch initial data.
