@@ -4,7 +4,7 @@ from common import GetDate
 from sqlalchemy.orm import sessionmaker
 
 def StoreData( injuryData ):
-    
+    today = GetDate()
     Session = sessionmaker( models.engine )
     with Session() as session:
         injuries = []
@@ -25,7 +25,7 @@ def StoreData( injuryData ):
                 injuries.append( {
                 'skater_id': injury[ 'skater_id' ],
                 'status': injury[ 'status' ],
-                'updated': injury[ 'updated' ],
+                'updated': today,
                 'injury_type': injury[ 'injury_type' ],
                 } )
                 skaterIds.append( injury[ 'skater_id' ] )
