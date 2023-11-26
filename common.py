@@ -1,5 +1,6 @@
 import requests
-import datetime
+from zoneinfo import ZoneInfo
+from datetime import date
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.dialects.postgresql import insert as pgsql_insert
 
@@ -11,7 +12,7 @@ def FetchJson( url ):
     return requests.get( url ).json()
 
 def GetDateString():
-    return datetime.date.today().strftime("%Y-%m-%d")
+    return date.today().strftime("%Y-%m-%d")
 
 def GetDate():
-    return datetime.date.today()
+    return date.today()

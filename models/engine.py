@@ -17,4 +17,3 @@ from sqlalchemy.dialects.postgresql import insert as pgsql_insert
 #TODO: maybe move it to models common
 def GetInsert( session ):
     return sqlite_insert if session.bind.dialect.name == 'sqlite' else  pgsql_insert
-
