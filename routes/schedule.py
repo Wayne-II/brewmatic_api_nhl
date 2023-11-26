@@ -49,7 +49,7 @@ def RetrieveData():
             #reset if new game detected
             if gameId != currentGameId:
                 #add game if this isn't the first game
-                if currentGameId is not None:
+                if game:
                     data.append( game )
                 game = {}
                 currentGameId = gameId
@@ -68,7 +68,8 @@ def RetrieveData():
                 #TODO: throw it has to be one or the other
                 pass
         #add the last game we built to the result data
-        data.append( game )
+        if game:
+            data.append( game )
     return data
 
 api = Namespace( "schedule" )
