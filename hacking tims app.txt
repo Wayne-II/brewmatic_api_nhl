@@ -1,0 +1,46 @@
+From what I understand, in order to get the endpoints from the Tim's app, I have
+to probably modify 
+
+General Guide for decrypting SSL Traffic from an App to get the API Endpoints
+https://medium.com/@roy2477/decrypting-android-app-ssl-traffic-c480e2143743#:~:text=To%20do%20this%2C%20go%20to%20the%20Device%20Manager%20and%20click,SSL%20traffic%20from%20the%20app.
+
+I tried reverse engineering the source, but the only thing I can see are varying
+snippets of what appears to be JSON as well as a boomfantasy assets for images.
+I have a sneaking suspicion I will have to provide the Tim's API KEY to boom
+fantasy's API once I find the endpoint.  Searching strings in the .java code
+after decompiling the .dex files did not prove fruitful.  It appears the app and
+the button to launch the app are hosted remotely.  It is possile they are
+generating server side pages, which is as simple as scraping the data.  The
+Tim's app appears to have been written in React Native.
+
+I used Cheat Engine to decompile and search strings.  I used ModSF to analize
+the URLs that were in the app, but none of the boom fantasy URLs were listed and
+there were hundreds when I used Cheat Engine to scan the memory of the running
+App.  I was hoping I could set breakpoints with Cheat Engine to pause the App on
+boot so that I could step line by line and check the memory for strings to get
+the API URLs but alas, Cheat Engine is a very complex application which would
+require learning ... Pascal in order to "script" breakpoints.  That's out of
+the scope of this adventure.
+
+Getting API Endpoints Notes
+
+Start MITM Web Interface/Proxy for AVD to use in order to log SSL Key files in
+order to use it in conjunction with Wireshark to decrypt SSL traffic on the fly,
+resulting in the endpoints being exposed.
+
+C:\Windows\System32\WindowsPowerShell\v1.0\powershell.exe -File "C:\Program Files\mitmproxy\bin\run.ps1" mitmweb
+
+http://mitm.it/cert/magisk
+
+tasks
+- find out why google chrome is dying when the browser is started
+- hack tims app to get API information to programatically make things easy
+
+part of the MITM hack for Tims App API extraction
+https://docs.mitmproxy.org/stable/howto-install-system-trusted-ca-android/
+
+C:\Users\Wayne\.mitmproxy\mitmproxy-ca-cert.cer
+renamed to:
+c8750f0d.0
+using:
+"C:\Program Files\OpenSSL-Win64\bin\openssl.exe" x509 -inform PEM -subject_hash_old -in C:\Users\Wayne\.mitmproxy\mitmproxy-ca-cert.cer
