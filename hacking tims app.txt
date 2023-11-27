@@ -1,8 +1,15 @@
+Getting API Endpoints Notes
+
 From what I understand, in order to get the endpoints from the Tim's app, I have
-to probably modify 
+to probably modify certificate pinning and run it in an emulator while also
+passing traffic through a proxy which is able to log the SSL KEYs which can be
+used by Wireshark to decrypt traffic on the fly.  At that point, I'll be able to
+decrypt SSL traffic from the Tim's app which will give me the API endpoints so
+that screenshots are no longer required.
 
 General Guide for decrypting SSL Traffic from an App to get the API Endpoints
 https://medium.com/@roy2477/decrypting-android-app-ssl-traffic-c480e2143743#:~:text=To%20do%20this%2C%20go%20to%20the%20Device%20Manager%20and%20click,SSL%20traffic%20from%20the%20app.
+https://wiki.wireshark.org/TLS
 
 I tried reverse engineering the source, but the only thing I can see are varying
 snippets of what appears to be JSON as well as a boomfantasy assets for images.
@@ -22,7 +29,7 @@ the API URLs but alas, Cheat Engine is a very complex application which would
 require learning ... Pascal in order to "script" breakpoints.  That's out of
 the scope of this adventure.
 
-Getting API Endpoints Notes
+
 
 Start MITM Web Interface/Proxy for AVD to use in order to log SSL Key files in
 order to use it in conjunction with Wireshark to decrypt SSL traffic on the fly,
