@@ -51,3 +51,203 @@ renamed to:
 c8750f0d.0
 using:
 "C:\Program Files\OpenSSL-Win64\bin\openssl.exe" x509 -inform PEM -subject_hash_old -in C:\Users\Wayne\.mitmproxy\mitmproxy-ca-cert.cer
+
+
+Note: The following article is a guideline, but anything that is problematic, like Fiddler costing money, has been circumvented.  Eg using MitmProxy instead of fiddler.  Both support logging SSL Keys so that Wireshark and use the log to decrypt SSL Traffic.
+In case the Article disappears:
+
+Decrypting Android App SSL Traffic: A Practical Guide for Security Researchers - Roy Elia - Jan 3 2023
+This article was written in collaboration with 
+Omry Zur
+
+
+Intro
+Capturing SSL (HTTPS) encrypted traffic from an Android app (APK) can be a valuable tool for security researchers. By analyzing this traffic, researchers can identify an app's potential vulnerabilities and security weaknesses. In this article, we will demonstrate, step by step, various techniques, and tools that can be used to capture SSL traffic from an Android app, from a security researcher’s perspective. These techniques can be used to conduct deep research on an app and understand the communication between the app and its server. By following the steps outlined in this article, security researchers can easily capture SSL traffic from Android apps and begin their analysis.
+
+SSL Traffic in Mobile Applications
+SSL (Secure Sockets Layer) is a security protocol that is widely used to encrypt communication between clients and servers over the internet. It is designed to prevent third parties from intercepting and viewing sensitive data that is transmitted between the two parties. SSL is commonly used to protect financial transactions, login credentials, and other sensitive information that is transmitted online.
+
+In the context of applications, SSL is often used to secure communication between an app and a server. This is especially important for apps that handle sensitive data, such as financial apps, health apps, and social media apps. By using SSL to encrypt communication between the app and the server, developers can protect user data from being accessed by unauthorized parties.
+
+However, as a security researcher, you may be interested in capturing and analyzing SSL traffic from an app in order to understand how it communicates with its server(s) and identify any potential vulnerabilities. So, let’s dive in and show you how to do this in a step-by-step manner.
+
+Step 0 — Tooling and installations
+Before we begin our demonstration, it is important to ensure that we have the necessary tools and installations in place. In this step, we will cover the tools that are required for capturing SSL traffic from an Android app.
+
+First, we will need a web debugging proxy such as Fiddler, which can intercept and modify network traffic. This tool will allow us to capture and analyze the SSL traffic from our Android app.
+
+Next, we will need an Android desktop emulator, such as the Virtual Device Manager (AVD) in Android Studio. This will allow us to run our Android app in a simulated environment on our desktop.
+
+Additionally, we will need an APK editing tool such as apktool, which can be used to decompile and modify the app’s package file. This will allow us to make changes to the app’s configuration, such as enabling SSL debugging, which is required for capturing SSL traffic.
+
+With these tools in place, we are ready to begin our demonstration.
+
+Step 1 — Download an APK from APKPure
+In this step, we will download the Android app that we want to capture SSL traffic from. There are many sources where you can download Android apps, such as the Google Play Store, or alternative app stores like APKPure. In this example, we will use APKPure to download our app.
+
+To do this, go to the APKPure website and search for the app that you want to download.
+
+APKPure
+Download APK from APKPure
+After the download is complete, you will have the app’s APK file saved on your computer. In the next step, we will use this APK file to install the app on our Android emulator.
+
+Step 2 — Configure the emulator
+Now, let’s move on to configure our Android emulator to prepare for capturing SSL traffic from our app.
+
+First, open Android Studio and go to the Virtual Device Manager (AVD).
+
+Virtual Device Manager (AVD)
+In the AVD Manager, create a new virtual device by following these steps:
+
+Click the “Create Virtual Device” button to open the “Select Hardware” dialog.
+In the “Select Hardware” dialog, choose the desired model of Android device and click “Next”.
+
+Selecting Hardware Model
+In the “System Image” dialog, choose the desired Android OS version and click “Next”. It is recommended to choose a recent Android version that is compatible with the app that you are going to run.
+
+Selecting Android OS Version
+Review the configuration of your virtual device and click “Finish” to create it.
+
+Reviewing the Selected Configuration
+Once you have created your virtual device, start it by clicking the “Start” button. This will launch the emulator and bring up the Android home screen.
+
+Now that our emulator is set up, we are ready to install our app and begin capturing SSL traffic.
+
+Step 3 — Installing the APK inside our emulator
+Next on the list is installing the Android app that we want to capture SSL traffic from on our emulator. To do this, just Drag and drop the APK file onto the emulator window. This will install the app on the emulator. Once the app is installed, launch it from the emulator’s home screen.
+
+After the app is installed and launched on the emulator, you will be able to use it just as you would on a real Android device. Up next, we will show you how to capture SSL traffic from the app.
+
+Step 4 — Configure the proxy to work with our emulator
+In the following section, we will configure our web debugging proxy to work with our emulator and begin capturing SSL traffic from the app.
+
+First, we need to find out the IP address of our computer. To do this, open a command prompt and type
+
+> ipconfig
+to display the network configuration. Look for the “IPv4 Address” field, which will show your computer’s IP address.
+
+
+ipconfig Output
+Next, open Fiddler and go to the “Tools” menu, then select “Fiddler Options”. In the Fiddler Options window, go to the “Connections” tab and make sure that the “Allow remote computers to connect” option is checked. This will allow our emulator to connect to Fiddler and send traffic through it.
+
+
+Allow remote computers to connect configuration
+In the same window, go to the “HTTPS” tab and check the “Decrypt HTTPS traffic” option. This will allow Fiddler to capture and decrypt HTTPS traffic, including SSL traffic from our app.
+
+
+Decrypt HTTPS traffic configuration
+Now, we need to configure our emulator to use Fiddler as its proxy. To do this, open the emulator’s settings and go to the “Network” section. In the “Network” settings, choose “Manual proxy configuration” and enter your computer’s IP address and the default port of Fiddler’s proxy (usually 8888). This will route all network traffic from the emulator through Fiddler, allowing us to capture and analyze it.
+
+
+Manual proxy configuration
+To continue, open the emulator’s Wi-Fi settings and click on the gear icon next to the Wi-Fi network that you are connected to.
+
+
+Android Wi-Fi settings
+In the settings for that network, choose “Manual” in the “Proxy” dropdown and enter the same IP address and port that you entered in the emulator’s proxy settings. This will ensure that all network traffic, including SSL traffic from the app, is routed through the proxy.
+
+
+Proxy settings
+After configuring the proxy, you will need to perform a cold boot of the emulator to apply the changes. To do this, go to the Device Manager and click the “Cold Boot Now” button for the emulator. This will restart the emulator and apply the new proxy settings.
+
+
+Once the emulator has restarted, launch the app and use it as you normally would. Your proxy should now be capturing the encrypted SSL traffic from the app.
+
+Sanity Check: To verify that this is working, try browsing to a website from the emulator and check if the traffic is being captured by the proxy.
+
+
+The encrypted SSL traffic from the app
+The lock icon adjacent to the packet id (#) symbolizes that the traffic is encrypted by the ssl protocol. Therefore, we can only see the requests and responses but not their content (body).
+
+Step 5 — Install Fiddler’s root certificate to see the decrypted traffic
+Our next step is to install Fiddler’s root certificate on the emulator to allow us to decrypt the SSL traffic from the app.
+
+First, open a web browser on the emulator and browse to “http://ipv4.fiddler:8888”. This will open Fiddler’s web interface. From here, click on the “FiddlerRoot certificate” link in order to download the root certificate.
+
+
+Fiddler’s web interface
+Next, go to the emulator’s settings and search for “Install a certificate”. In the “Certificate Authority (CA) Certificate” settings, click on “Install Anyway” and choose the Fiddler root certificate that you just downloaded. This will install the certificate on the emulator, allowing it to trust SSL certificates that are issued by Fiddler.
+
+Install a certificate process
+After installing the certificate, you should be able to see decrypted SSL traffic from the app on Fiddler.
+
+
+Decrypted SSL traffic
+
+Awesome meme
+Unfortunately, this is not always possible, especially on newer versions of Android. Starting with Android 11, user certificates are disallowed in user-installed apps unless the app’s developers explicitly allow it. This means that even if you have installed the Fiddler root certificate on the emulator, you may not be able to see decrypted SSL traffic from the app unless the app’s developers have enabled support for user certificates.
+
+More info about those security changes in Android Nougat:
+
+Changes to Trusted Certificate Authorities in Android Nougat
+Posted by Chad Brubaker, Android Security team In Android Nougat, we've changed how Android handles trusted certificate…
+android-developers.googleblog.com
+
+Step 6 — Edit the APK to accept user certificates
+In this step, we will edit the app’s APK file to allow user certificates and enable Fiddler to capture decrypted SSL traffic from the app. This process involves several actions, which are outlined below:
+
+Decompile the APK using APKTool. This will extract the files and resources from the APK, allowing you to edit them.
+.\apktool.bat d .\Wolt.apk
+Edit (or create if not exist) the “res/xml/network_security_config.xml” file to allow user certificates. This file controls the app’s network security settings, which will probably look like that:
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+    <domain-config>
+        <domain includeSubdomains="true">verygoodproxy.com</domain>
+    </domain-config>
+</network-security-config>
+and you will need to add a new “base-config” element that allows user certificates. like that:
+
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <!--allow user certificates start-->
+    <base-config>
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+    <!--allow user certificates end-->
+    <domain-config>
+        <domain includeSubdomains="true">verygoodproxy.com</domain>
+    </domain-config>
+</network-security-config>
+Edit the “AndroidManifest.xml” file to specify that the app should use the edited “network_security_config.xml” file. To do this, search for the “<application>” tag and the “android:networkSecurityConfig” attribute inside it (if it doesn’t exist you should add it).
+<application ... android:networkSecurityConfig="@null" ...>
+and change “@null” to the path of res/xml/network_security_config.xml file
+
+<application ... android:networkSecurityConfig="@xml/network_security_config" ...>
+Re-compile the APK using APKTool. This will combine the edited files and resources into a new APK file.
+cd .\Wolt\
+..\apktool.bat b -f
+The re-compiled APK is inside the \dist folder.
+
+
+Re-compiled APK
+When you create or modify an Android app, it is often necessary to align and sign the resulting APK file in order to make it compatible with Android devices.
+
+Aligning an APK file involves optimizing its internal structure and layout to make it more efficient and faster to install on an Android device. This is done using a tool called “zipalign”, which is included in the Android SDK. Aligning an APK file can improve its performance and reduce the amount of storage space it occupies on the device.
+
+Signing an APK file, on the other hand, involves adding a digital signature to the file to verify its authenticity and integrity. This is necessary because Android requires all apps to be signed in order to be installed on a device. When you sign an APK file, you use a private key to create a signature that is embedded in the file. This signature can then be verified using the corresponding public key to ensure that the APK has not been tampered with.
+
+More info about those procedures:
+
+Application Signing | Android Open Source Project
+Note: If you are using Android App Links make sure to update the SHA256 fingerprints of your keys in the corresponding…
+source.android.com
+
+Behavior changes: Apps targeting Android 11 | Android Developers
+Like earlier releases, Android 11 includes behavior changes that may affect your app. The following behavior changes…
+developer.android.com
+
+Use “zipalign” (usually resides in C:\Program Files (x86)\APK Editor Studio\tools) to align the new APK file.
+zipalign.exe -p -v 4 .\Wolt-patched.apk Wolt-patched-aligned.apk
+Generate an RSA key and use it to sign the new APK file. This is necessary to install the modified APK on the emulator. Use “keytool” (usually resides in C:\Program Files\Android\Android Studio\jre\bin\keytool.exe).
+cd ..
+keytool -genkey -v -keystore my-release-key.keystore -alias alias_name -keyalg RSA -keysize 2048 -validity 10000
+Sign the APK using the generated RSA key. Use “apksigner” (usually resides in C:\Program Files (x86)\APK Editor Studio\tools).
+apksigner.bat sign --ks .\my-release-key.keystore --in .\Wolt-patched-aligned.apk --out .\Wolt-patched-aligned-signed.apk
+Install the signed APK on the emulator and launch the app.
+
+Decrypted SSL (HTTPS) Traffic
+After completing these steps, you will be able to see decrypted SSL traffic from the app on Fiddler. This will allow you to conduct deep research on the app and understand the communication between the app and its server(s).
