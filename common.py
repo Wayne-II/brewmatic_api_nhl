@@ -1,6 +1,5 @@
 import requests
-from zoneinfo import ZoneInfo
-from datetime import date
+from datetime import datetime, date, timedelta
 from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.dialects.postgresql import insert as pgsql_insert
 
@@ -11,8 +10,10 @@ def GetInsert( session ):
 def FetchJson( url ):
     return requests.get( url ).json()
 
+
+offsetHours = -4
 def GetDateString():
-    return date.today().strftime("%Y-%m-%d")
+    return ( date.today() + timedelta( hours = offsetHours ) ).strftime( '%Y-%m-%d')
 
 def GetDate():
-    return date.today()
+    return date.today() + timedelta( hours = offsetHours )
