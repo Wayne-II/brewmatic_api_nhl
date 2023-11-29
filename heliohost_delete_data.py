@@ -1,73 +1,93 @@
+#!/usr/bin/python3.10
+print( "Content-type: text/html\n\n" )
+
 import cgi
 from datetime import date
 import models
 from sqlalchemy.orm import sessionmaker
 import sqlalchemy
 
-print( 'Content-type: text/html' )
-
 def GetTable( tableName ):
-    if tableName == 'schedule':
-        return models.Schedule
-    elif tableName == 'injuries':
-        return models.Injury
-    if tableName == 'teams':
-        return models.Team
-    if tableName == 'skaters':
-        return models.Skater
-    if tableName == 'roster':
-        return models.Roster
+    try:
+        if tableName == 'schedule':
+            return models.Schedule
+        elif tableName == 'injuries':
+            return models.Injury
+        if tableName == 'teams':
+            return models.Team
+        if tableName == 'skaters':
+            return models.Skater
+        if tableName == 'roster':
+            return models.Roster
+    except Exception as e:
+        print( f'There was an issue determining the table: {str(e)}' )
 
 def GetColumn( table ):
-    if isinstance( table, models.Schedule ):
-        return table.game_date
-    if isinstance( table, models.Injury ):
-        return table.updated
-    if isinstance( table, models.Team ):
-        return table.updated
-    if isinstance( table, models.Skater ):
-        return table.updated
-    if isinstance( table, models.Roster ):
-        return table.updated
-    
+    try:
+        if type( table) == type( models.Schedule ):
+            return table.game_date
+        if type( table ) == type( models.Injury ):
+            return table.updated
+        if type( table ) == type( models.Team ):
+            return table.updated
+        if type( table ) == type( models.Skater ):
+            return table.updated
+        if type( table ) == type( models.Roster ):
+            return table.updated
+    except Exception as e:
+        print( f'There was an issue determining the column: {str(e)}' )
 
 def main():
+    password = "super_dave_osbourne_can_haz_chezburger"
+    tableName = ''
+    updated = ''
 
-    form = cgi.FieldStorage()
-    password = "super_date_osbourne_can_haz_chezburger"
-    tableName = form.getvalue( 'table' )
-    if isinstance( tableName, list ):
-        tableName = tableName[ 0 ]
+    get = cgi.parse()
+    print( f'parameters sent: {get}')
+    try:
+        getTable = get[ 'table' ]
+        getUpdated = get[ 'updated' ] 
+        getPassword = get[ 'password' ]
+    except Exception as e:
+        print( f'There was an issue with a required parameter: {str(e)}' )
 
-    updated = form.getvalue( 'updated' )
-    if isinstance( updated, list ):
-        updated = updated[ 0 ]
-    updated = str( updated ).split( '-' )
+    try:
+        if isinstance( getTable, list ):
+            tableName = getTable[ 0 ]
 
-    if len( updated ) != 3:
-        print( 'Updated my be in the format: YYYY-MM-DD' )
-        exit()
-    updatedDate = date( updated[ 0 ], updated[ 1 ], updated[ 2 ] )
+        if isinstance( getUpdated, list ):
+            updated = getUpdated[ 0 ]
 
-    formPassword = form.getvalue( 'password' )
-    if isinstance( formPassword, list ):
-        formPassword = formPassword[ 0 ]
-    formPassword = str( formPassword )
+        updatedParts = str( updated ).split( '-' )
 
-    if formPassword == password:
-        Session = sessionmaker( models.engine )
-        table = GetTable( tableName )
-        column = GetColumn( table )
-        with Session() as session:
-            delete = session.delete( 
-                table
-            ).where(
-                column == updatedDate
-            )
-        print( f'Built query using: table name: {tableName} column: {updated}')
-        print( f'Query: {str( delete )}')
-        session.execute( delete )
+        if len( updatedParts ) != 3:
+            print( f'Updated my be in the format: YYYY-MM-DD {updatedParts}' )
+            exit()
+        updatedDate = date( int( updatedParts[ 0 ] ), int( updatedParts[ 1 ] ), int( updatedParts[ 2 ] ) )
 
+        if isinstance( getPassword, list ):
+            formPassword = getPassword[ 0 ]
+        formPassword = str( formPassword )
+    except Exception as e:
+        print( f'There was an issue processing the required parameters: {str(e)}' )
     
-main()
+    try:
+        if formPassword == password:
+            tableName = 'schedule'
+            Session = sessionmaker( models.engine )
+            
+            with Session() as session:
+                table = GetTable( tableName )
+                column = GetColumn( table )
+                query = session.query( table ).filter( column == updated)
+                print( f'Query for deletion: {str(query)}')
+                query.delete()
+                session.commit()
+    except Exception as e:
+        print( f'There was an issue with the database {str(e)}')
 
+try:    
+    main()
+    print( 'All Done' )
+except Exception as e:
+    print( f'uncaught exception: {str(e)}')
