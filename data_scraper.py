@@ -20,6 +20,7 @@ def handleError( error ):
         print( f'The was an error in the error handler. {str(e)}')
 
 def main( argv ):
+    #TODO: CGI-BIN URL GET parameters
     doSchedule = True
     doInjury = True
     doTeams = True
