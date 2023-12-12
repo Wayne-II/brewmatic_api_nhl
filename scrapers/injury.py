@@ -1,5 +1,6 @@
 from dotenv import load_dotenv
 load_dotenv('.env')
+import sys
 
 from common import FetchJson, GetDateString
 import os
@@ -13,11 +14,18 @@ INJURY_ALTERNATE_BASE_URL = os.getenv( 'INJURY_ALTERNATE_BASE_URL' )
 # fetch and filter raw NHL data
 #TODO: determine which data I want to keep if there's a conflict
 def FetchInjuries():
-    injuriesTSN = FetchTSNData()
-    injuriesNHL = FetchNHLData()
-    injuries = injuriesTSN
-    for team in injuriesNHL:
-        injuries.extend( injuriesNHL[ team ] )
+    try:
+        injuries = []
+        injuriesTSN = FetchTSNData()
+        injuriesNHL = FetchNHLData()
+        injuries = injuriesTSN
+        for team in injuriesNHL:
+            injuries.extend( injuriesNHL[ team ] )
+    except Exception as e:
+        exc_type, exc_obj, exc_tb = sys.exc_info()
+        fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+        print(exc_type, fname, exc_tb.tb_lineno)
+        print( e )
     
     return injuries
 
@@ -43,7 +51,13 @@ def FetchTSNData():
     injuries = FetchJson( f'{INJURY_ALTERNATE_BASE_URL}' )
     injuredPlayers = []
     for team in injuries:
-        injuredPlayers.extend( ProcessTeamInjuries( team ) )
+        if 'playerInjuries' in team.keys() and team[ 'playerInjuries' ]:
+            injuredPlayers.extend( ProcessTeamInjuries( team ) )
+        else:
+            if 'competitor' in team.keys() and 'name' in team[ 'competitor' ].keys():
+                print( f'no injuries. skipping {team[ "competitor" ][ "name" ]}')
+            else:
+                print( 'Something happened processing TSN data' )
     return injuredPlayers
 
 def ProcessTeamInjuries( teamJson ):
