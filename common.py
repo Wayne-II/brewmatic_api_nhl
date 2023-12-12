@@ -18,15 +18,16 @@ def GetDateString():
     ret = d.strftime( '%Y-%m-%d' )
     return ret
 
-#offsetHours = -5
+offsetHours = -5
 offsetName = 'America/New_York'  
 def GetDate():
-    zone = ZoneInfo( offsetName )
-    offsetHours = datetime.datetime.now( zone ).utcoffset()
+    #Doesn't work in Windows.  Linux system unavailable at the time of writing.
+    # zone = ZoneInfo( offsetName )
+    # offsetHours = datetime.now( zone ).utcoffset()
+    # print( offsetHours )
     td = timedelta( hours = offsetHours )
     dt = datetime.now()
     tz = timezone(td)
     easternDt = dt.astimezone( tz=tz )
     ret = date( easternDt.year, easternDt.month, easternDt.day )
-    print( f'Returning {ret}')
     return ret
